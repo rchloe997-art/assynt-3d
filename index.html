@@ -3,19 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Configurateur ASSYNT - Mode jour</title>
 
 <style>
-* {
-    box-sizing: border-box;
-}
-
 html, body {
     margin: 0;
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #ffffff;
+    background: white;
     font-family: Arial, sans-serif;
 }
 
@@ -23,105 +20,12 @@ html, body {
     position: absolute;
     inset: 0;
 }
-
-#hotspot {
-    position: absolute;
-    z-index: 10;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    border: 2px solid white;
-    border-radius: 50%;
-    background: #252525;
-    color: white;
-    font-size: 24px;
-    cursor: pointer;
-    transform: translate(-50%, -50%);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.25);
-}
-
-#hotspot:hover {
-    background: #555555;
-}
-
-#info {
-    display: none;
-    position: absolute;
-    z-index: 20;
-    top: 20px;
-    right: 20px;
-    width: 270px;
-    max-width: calc(100% - 40px);
-    padding: 20px;
-    background: white;
-    border: 1px solid #dddddd;
-    border-radius: 8px;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.15);
-}
-
-#info h3 {
-    margin: 0 30px 12px 0;
-    font-size: 17px;
-}
-
-#info p {
-    font-size: 13px;
-    line-height: 1.6;
-    color: #555555;
-}
-
-#close {
-    position: absolute;
-    top: 10px;
-    right: 12px;
-    border: none;
-    background: transparent;
-    font-size: 23px;
-    cursor: pointer;
-}
-
-#message {
-    position: absolute;
-    z-index: 5;
-    bottom: 15px;
-    left: 15px;
-    color: #777777;
-    font-size: 12px;
-}
 </style>
 </head>
 
 <body>
 
 <div id="viewer"></div>
-
-<button
-    id="hotspot"
-    type="button"
-    aria-label="Informations sur la banquette"
->+</button>
-
-<div id="info">
-    <button
-        id="close"
-        type="button"
-        aria-label="Fermer"
-    >×</button>
-
-    <h3>Lit banquette ASSYNT</h3>
-
-    <p>
-        Une banquette modulable permettant
-        de profiter d'un espace de vie
-        fonctionnel en journée.
-    </p>
-
-    <p><strong>Configuration jour</strong></p>
-</div>
-
-<div id="message">Chargement du modèle 3D...</div>
 
 <script type="importmap">
 {
@@ -138,12 +42,9 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-// ELEMENTS HTML
+// CONTENEUR
 
 const container = document.getElementById('viewer');
-const hotspot = document.getElementById('hotspot');
-const info = document.getElementById('info');
-const message = document.getElementById('message');
 
 // SCENE
 
@@ -194,7 +95,7 @@ const light = new THREE.DirectionalLight(
 light.position.set(5, 10, 7);
 scene.add(light);
 
-// CONTROLES DE ROTATION
+// CONTROLES
 
 const controls = new OrbitControls(
     camera,
@@ -203,6 +104,7 @@ const controls = new OrbitControls(
 
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
+
 controls.enableZoom = true;
 controls.enableRotate = true;
 controls.enablePan = true;
@@ -219,13 +121,6 @@ const edgeMaterial = new THREE.LineBasicMaterial({
     color: 0x303030
 });
 
-// POINT INTERACTIF
-
-const hotspotPosition = new THREE.Vector3();
-const projectedPosition = new THREE.Vector3();
-
-let modelLoaded = false;
-
 // CHARGEMENT DU MODELE
 
 const loader = new GLTFLoader();
@@ -237,6 +132,7 @@ loader.load(
     function(gltf) {
 
         const model = gltf.scene;
+
         scene.add(model);
 
         // RENDU DESSIN AVEC CONTOURS
@@ -266,6 +162,7 @@ loader.load(
         const box = new THREE.Box3().setFromObject(model);
 
         const size = box.getSize(new THREE.Vector3());
+
         const center = box.getCenter(new THREE.Vector3());
 
         const maxDim = Math.max(
@@ -274,10 +171,7 @@ loader.load(
             size.z
         );
 
-        if (maxDim <= 0) {
-            message.textContent = "Le modèle 3D est vide.";
-            return;
-        }
+        if (maxDim <= 0) return;
 
         // POSITION DE LA CAMERA
 
@@ -289,87 +183,26 @@ loader.load(
 
         controls.target.copy(center);
 
-        camera.near = Math.max(maxDim / 100, 0.001);
+        camera.near = Math.max(
+            maxDim / 100,
+            0.001
+        );
+
         camera.far = maxDim * 100;
 
         camera.updateProjectionMatrix();
+
         controls.update();
-
-        // POINT AU CENTRE DU MODELE
-        // POSITION TEMPORAIRE POUR LE TEST
-
-        hotspotPosition.copy(center);
-
-        modelLoaded = true;
-        hotspot.style.display = 'flex';
-        message.style.display = 'none';
-
-        updateHotspot();
     },
 
     undefined,
 
     function(error) {
+
         console.error(
-            "Erreur de chargement du modèle :",
+            "Erreur de chargement du modèle 3D :",
             error
         );
-
-        message.textContent =
-            "Impossible de charger le modèle 3D.";
-    }
-);
-
-// POSITION DU POINT A L'ECRAN
-
-function updateHotspot() {
-
-    if (!modelLoaded) return;
-
-    projectedPosition.copy(hotspotPosition);
-    projectedPosition.project(camera);
-
-    const visible =
-        projectedPosition.z >= -1 &&
-        projectedPosition.z <= 1 &&
-        Math.abs(projectedPosition.x) <= 1 &&
-        Math.abs(projectedPosition.y) <= 1;
-
-    hotspot.style.visibility =
-        visible ? 'visible' : 'hidden';
-
-    if (!visible) return;
-
-    const width = renderer.domElement.clientWidth;
-    const height = renderer.domElement.clientHeight;
-
-    const x =
-        (projectedPosition.x * 0.5 + 0.5) * width;
-
-    const y =
-        (-projectedPosition.y * 0.5 + 0.5) * height;
-
-    hotspot.style.left = x + 'px';
-    hotspot.style.top = y + 'px';
-}
-
-// CLIC SUR LE POINT
-
-hotspot.addEventListener('click', function() {
-
-    if (info.style.display === 'block') {
-        info.style.display = 'none';
-    } else {
-        info.style.display = 'block';
-    }
-});
-
-// FERMETURE DE LA FICHE
-
-document.getElementById('close').addEventListener(
-    'click',
-    function() {
-        info.style.display = 'none';
     }
 );
 
@@ -380,7 +213,6 @@ function animate() {
     requestAnimationFrame(animate);
 
     controls.update();
-    updateHotspot();
 
     renderer.render(scene, camera);
 }
@@ -400,8 +232,6 @@ window.addEventListener('resize', function() {
         window.innerWidth,
         window.innerHeight
     );
-
-    updateHotspot();
 });
 
 </script>
