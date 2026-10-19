@@ -18,62 +18,12 @@ html, body {
     position: absolute;
     inset: 0;
 }
-
-#options {
-    position: absolute;
-    z-index: 10;
-    top: 20px;
-    left: 20px;
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-button {
-    background: white;
-    border: 1px solid #222;
-    padding: 10px 16px;
-    cursor: pointer;
-    font-size: 13px;
-    border-radius: 3px;
-}
-
-button:hover {
-    background: #eeeeee;
-}
-
-button.active {
-    background: #222;
-    color: white;
-}
 </style>
 </head>
 
 <body>
 
 <div id="viewer"></div>
-
-<div id="options">
-    <button class="active" data-file="Assynt_Beag_Adhair.glb">
-        Beag Adhair
-    </button>
-
-    <button data-file="Assynt_Beag.glb">
-        Beag
-    </button>
-
-    <button data-file="Assynt_Corbett450.glb">
-        Corbett 450
-    </button>
-
-    <button data-file="Assynt_Corbett500.glb">
-        Corbett 500
-    </button>
-
-    <button data-file="Assynt_Outdoor.glb">
-        Outdoor
-    </button>
-</div>
 
 <script type="importmap">
 {
@@ -92,8 +42,12 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const container = document.getElementById('viewer');
 
+// SCÈNE
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
+
+// CAMÉRA
 
 const camera = new THREE.PerspectiveCamera(
     35,
@@ -102,16 +56,18 @@ const camera = new THREE.PerspectiveCamera(
     10000
 );
 
+// RENDU
+
 const renderer = new THREE.WebGLRenderer({
     antialias: true
 });
 
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
+
 container.appendChild(renderer.domElement);
 
-
-// LUMIERES
+// LUMIÈRES
 
 scene.add(
     new THREE.HemisphereLight(
@@ -129,98 +85,83 @@ const light = new THREE.DirectionalLight(
 light.position.set(5, 10, 7);
 scene.add(light);
 
+// CONTRÔLES
 
-// CONTROLES
-
-const controls =
-    new OrbitControls(camera, renderer.domElement);
+const controls = new OrbitControls(
+    camera,
+    renderer.domElement
+);
 
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
 
+controls.enableZoom = true;
+controls.enableRotate = true;
+controls.enablePan = true;
 
-// CHARGEMENT
+// MATÉRIAU MONOCHROME
+
+const drawingMaterial = new THREE.MeshStandardMaterial({
+    color: 0xf2f2f0,
+    roughness: 0.9,
+    metalness: 0
+});
+
+const edgeMaterial = new THREE.LineBasicMaterial({
+    color: 0x303030
+});
+
+// CHARGEMENT DU MODÈLE
 
 const loader = new GLTFLoader();
 
-let currentModel = null;
-let firstLoad = true;
-
-
-// MATERIAU MODE DESSIN
-
-const drawingMaterial =
-    new THREE.MeshStandardMaterial({
-        color: 0xf2f2f0,
-        roughness: 0.9,
-        metalness: 0
-    });
-
-
 function loadModel(file) {
 
-    loader.load(file, function(gltf) {
+    loader.load(
+        file,
 
-        // Supprime l'ancien modèle
+        function(gltf) {
 
-        if (currentModel) {
-            scene.remove(currentModel);
-        }
+            const model = gltf.scene;
 
-        const model = gltf.scene;
+            scene.add(model);
 
-        currentModel = model;
+            // RENDU DESSIN AVEC CONTOURS
 
-        scene.add(model);
+            model.traverse(function(child) {
 
+                if (child.isMesh) {
 
-        // RENDU MONOCHROME + CONTOURS
+                    child.material = drawingMaterial;
 
-        model.traverse(function(child) {
-
-            if (child.isMesh) {
-
-                child.material = drawingMaterial;
-
-                const edges =
-                    new THREE.EdgesGeometry(
+                    const edges = new THREE.EdgesGeometry(
                         child.geometry,
                         25
                     );
 
-                const lines =
-                    new THREE.LineSegments(
+                    const lines = new THREE.LineSegments(
                         edges,
-                        new THREE.LineBasicMaterial({
-                            color: 0x303030
-                        })
+                        edgeMaterial
                     );
 
-                child.add(lines);
-            }
+                    child.add(lines);
+                }
+            });
 
-        });
+            // CENTRAGE AUTOMATIQUE
 
+            const box = new THREE.Box3().setFromObject(model);
 
-        // CADRAGE UNIQUEMENT AU PREMIER CHARGEMENT
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
 
-        if (firstLoad) {
+            const maxDim = Math.max(
+                size.x,
+                size.y,
+                size.z
+            );
 
-            const box =
-                new THREE.Box3().setFromObject(model);
-
-            const size =
-                box.getSize(new THREE.Vector3());
-
-            const center =
-                box.getCenter(new THREE.Vector3());
-
-            const maxDim =
-                Math.max(
-                    size.x,
-                    size.y,
-                    size.z
-                );
+            if (maxDim <= 0) return;
 
             camera.position.set(
                 center.x + maxDim * 1.3,
@@ -230,52 +171,30 @@ function loadModel(file) {
 
             controls.target.copy(center);
 
-            camera.near = maxDim / 100;
+            camera.near = Math.max(maxDim / 100, 0.001);
             camera.far = maxDim * 100;
 
             camera.updateProjectionMatrix();
-
             controls.update();
 
-            firstLoad = false;
+        },
+
+        undefined,
+
+        function(error) {
+            console.error(
+                "Erreur de chargement du modèle 3D :",
+                error
+            );
         }
-
-    });
-
+    );
 }
 
+// MODÈLE INITIAL
 
-// MODELE INITIAL
-
-loadModel("Assynt_Beag_Adhair.glb");
-
-
-// BOUTONS
-
-document
-    .querySelectorAll('#options button')
-    .forEach(function(button) {
-
-        button.addEventListener(
-            'click',
-            function() {
-
-                document
-                    .querySelectorAll('#options button')
-                    .forEach(function(b) {
-                        b.classList.remove('active');
-                    });
-
-                button.classList.add('active');
-
-                loadModel(
-                    button.dataset.file
-                );
-            }
-        );
-
-    });
-
+loadModel(
+    "Configuration%20T5.T6%20L1%20-%20Assynt.glb"
+);
 
 // ANIMATION
 
@@ -286,31 +205,24 @@ function animate() {
     controls.update();
 
     renderer.render(scene, camera);
-
 }
 
 animate();
 
-
 // REDIMENSIONNEMENT
 
-window.addEventListener(
-    'resize',
-    function() {
+window.addEventListener('resize', function() {
 
-        camera.aspect =
-            window.innerWidth /
-            window.innerHeight;
+    camera.aspect =
+        window.innerWidth / window.innerHeight;
 
-        camera.updateProjectionMatrix();
+    camera.updateProjectionMatrix();
 
-        renderer.setSize(
-            window.innerWidth,
-            window.innerHeight
-        );
-
-    }
-);
+    renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+    );
+});
 
 </script>
 
