@@ -3,10 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Configurateur ASSYNT - Mode jour</title>
+<title>Configurateur ASSYNT</title>
 
 <style>
+* {
+    box-sizing: border-box;
+}
+
 html, body {
     margin: 0;
     width: 100%;
@@ -20,12 +23,65 @@ html, body {
     position: absolute;
     inset: 0;
 }
+
+#options {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 10;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px 20px;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+}
+
+#options h3 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.option input {
+    width: 17px;
+    height: 17px;
+    accent-color: #252525;
+    cursor: pointer;
+}
+
+#status {
+    position: absolute;
+    bottom: 15px;
+    left: 20px;
+    z-index: 10;
+    font-size: 12px;
+    color: #777;
+}
 </style>
 </head>
 
 <body>
 
 <div id="viewer"></div>
+
+<div id="options">
+    <h3>Personnalisez votre aménagement</h3>
+
+    <label class="option">
+        <input type="checkbox" id="beagAdhair">
+        Cuisine Beag Adhair
+    </label>
+</div>
+
+<div id="status">Chargement du modèle 3D...</div>
 
 <script type="importmap">
 {
@@ -41,10 +97,6 @@ html, body {
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
-// CONTENEUR
-
-const container = document.getElementById('viewer');
 
 // SCENE
 
@@ -75,7 +127,8 @@ renderer.setSize(
     window.innerHeight
 );
 
-container.appendChild(renderer.domElement);
+document.getElementById('viewer')
+    .appendChild(renderer.domElement);
 
 // LUMIERES
 
@@ -104,12 +157,11 @@ const controls = new OrbitControls(
 
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
-
 controls.enableZoom = true;
 controls.enableRotate = true;
 controls.enablePan = true;
 
-// MATERIAU MONOCHROME
+// MATERIAUX
 
 const drawingMaterial = new THREE.MeshStandardMaterial({
     color: 0xf2f2f0,
@@ -121,90 +173,142 @@ const edgeMaterial = new THREE.LineBasicMaterial({
     color: 0x303030
 });
 
-// CHARGEMENT DU MODELE
+// CHARGEMENT
 
 const loader = new GLTFLoader();
 
-loader.load(
+let baseModel = null;
+let kitchenModel = null;
+let kitchenRequested = false;
 
+const checkbox = document.getElementById('beagAdhair');
+const status = document.getElementById('status');
+
+checkbox.disabled = true;
+
+// APPLIQUER LE RENDU DESSIN
+
+function applyDrawingStyle(model) {
+
+    model.traverse(function(child) {
+
+        if (!child.isMesh) return;
+
+        child.material = drawingMaterial;
+
+        const edges = new THREE.EdgesGeometry(
+            child.geometry,
+            25
+        );
+
+        const lines = new THREE.LineSegments(
+            edges,
+            edgeMaterial
+        );
+
+        child.add(lines);
+    });
+}
+
+// CADRER LA CAMERA SUR LA BANQUETTE
+
+function frameCamera(model) {
+
+    const box = new THREE.Box3().setFromObject(model);
+
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    const maxDim = Math.max(
+        size.x,
+        size.y,
+        size.z
+    );
+
+    if (maxDim <= 0) return;
+
+    camera.position.set(
+        center.x + maxDim * 1.3,
+        center.y + maxDim * 0.8,
+        center.z + maxDim * 1.3
+    );
+
+    controls.target.copy(center);
+
+    camera.near = Math.max(maxDim / 100, 0.001);
+    camera.far = maxDim * 100;
+
+    camera.updateProjectionMatrix();
+    controls.update();
+}
+
+// CHARGER LA BANQUETTE
+
+loader.load(
     "Configuration%20T5.T6%20L1%20-%20Assynt.glb",
 
     function(gltf) {
 
-        const model = gltf.scene;
+        baseModel = gltf.scene;
 
-        scene.add(model);
+        applyDrawingStyle(baseModel);
 
-        // RENDU DESSIN AVEC CONTOURS
+        scene.add(baseModel);
 
-        model.traverse(function(child) {
+        frameCamera(baseModel);
 
-            if (child.isMesh) {
-
-                child.material = drawingMaterial;
-
-                const edges = new THREE.EdgesGeometry(
-                    child.geometry,
-                    25
-                );
-
-                const lines = new THREE.LineSegments(
-                    edges,
-                    edgeMaterial
-                );
-
-                child.add(lines);
-            }
-        });
-
-        // CALCUL DES DIMENSIONS
-
-        const box = new THREE.Box3().setFromObject(model);
-
-        const size = box.getSize(new THREE.Vector3());
-
-        const center = box.getCenter(new THREE.Vector3());
-
-        const maxDim = Math.max(
-            size.x,
-            size.y,
-            size.z
-        );
-
-        if (maxDim <= 0) return;
-
-        // POSITION DE LA CAMERA
-
-        camera.position.set(
-            center.x + maxDim * 1.3,
-            center.y + maxDim * 0.8,
-            center.z + maxDim * 1.3
-        );
-
-        controls.target.copy(center);
-
-        camera.near = Math.max(
-            maxDim / 100,
-            0.001
-        );
-
-        camera.far = maxDim * 100;
-
-        camera.updateProjectionMatrix();
-
-        controls.update();
+        status.textContent = "";
     },
 
     undefined,
 
     function(error) {
-
-        console.error(
-            "Erreur de chargement du modèle 3D :",
-            error
-        );
+        console.error("Erreur banquette :", error);
+        status.textContent =
+            "Erreur de chargement de la banquette.";
     }
 );
+
+// CHARGER LA CUISINE
+
+loader.load(
+    "Beag%20adhair.glb",
+
+    function(gltf) {
+
+        kitchenModel = gltf.scene;
+
+        applyDrawingStyle(kitchenModel);
+
+        // La cuisine conserve les coordonnées
+        // définies lors de l'export Rhino.
+
+        kitchenModel.visible = kitchenRequested;
+
+        scene.add(kitchenModel);
+
+        checkbox.disabled = false;
+    },
+
+    undefined,
+
+    function(error) {
+        console.error("Erreur cuisine :", error);
+        status.textContent =
+            "Erreur de chargement de la cuisine.";
+    }
+);
+
+// AFFICHER OU MASQUER LA CUISINE
+
+checkbox.addEventListener('change', function() {
+
+    kitchenRequested = checkbox.checked;
+
+    if (kitchenModel) {
+        kitchenModel.visible = kitchenRequested;
+    }
+});
 
 // ANIMATION
 
