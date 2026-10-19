@@ -82,31 +82,23 @@ html, body {
     <h3>Choisissez votre cuisine</h3>
 
     <label class="option">
-        <input
-            type="radio"
-            name="cuisine"
-            value="aucune"
-            checked
-        >
+        <input type="radio" name="cuisine" value="aucune" checked>
         Aucune cuisine
     </label>
 
     <label class="option">
-        <input
-            type="radio"
-            name="cuisine"
-            value="beagAdhair"
-        >
+        <input type="radio" name="cuisine" value="beagAdhair">
         Cuisine Beag Adhair
     </label>
 
     <label class="option">
-        <input
-            type="radio"
-            name="cuisine"
-            value="beag"
-        >
+        <input type="radio" name="cuisine" value="beag">
         Cuisine Beag
+    </label>
+
+    <label class="option">
+        <input type="radio" name="cuisine" value="corbett">
+        Cuisine Corbett
     </label>
 </div>
 
@@ -127,12 +119,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-// SCENE
-
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
-
-// CAMERA
 
 const camera = new THREE.PerspectiveCamera(
     35,
@@ -141,56 +129,27 @@ const camera = new THREE.PerspectiveCamera(
     10000
 );
 
-// RENDU
-
 const renderer = new THREE.WebGLRenderer({
     antialias: true
 });
 
-renderer.setPixelRatio(
-    Math.min(window.devicePixelRatio, 2)
-);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
 
-renderer.setSize(
-    window.innerWidth,
-    window.innerHeight
-);
+document.getElementById('viewer').appendChild(renderer.domElement);
 
-document.getElementById('viewer')
-    .appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff, 0xffffff, 3));
 
-// LUMIERES
-
-scene.add(
-    new THREE.HemisphereLight(
-        0xffffff,
-        0xffffff,
-        3
-    )
-);
-
-const light = new THREE.DirectionalLight(
-    0xffffff,
-    3
-);
-
+const light = new THREE.DirectionalLight(0xffffff, 3);
 light.position.set(5, 10, 7);
 scene.add(light);
 
-// CONTROLES
-
-const controls = new OrbitControls(
-    camera,
-    renderer.domElement
-);
-
+const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
 controls.enableZoom = true;
 controls.enableRotate = true;
 controls.enablePan = true;
-
-// MATERIAUX
 
 const drawingMaterial = new THREE.MeshStandardMaterial({
     color: 0xf2f2f0,
@@ -202,26 +161,20 @@ const edgeMaterial = new THREE.LineBasicMaterial({
     color: 0x303030
 });
 
-// CHARGEMENT
-
 const loader = new GLTFLoader();
 const status = document.getElementById('status');
 
 let baseModel = null;
+let selectedKitchen = "aucune";
 
 const kitchens = {
     beagAdhair: null,
-    beag: null
+    beag: null,
+    corbett: null
 };
 
-let selectedKitchen = "aucune";
-
-// STYLE DESSIN
-
 function applyDrawingStyle(model) {
-
     model.traverse(function(child) {
-
         if (!child.isMesh) return;
 
         child.material = drawingMaterial;
@@ -240,21 +193,12 @@ function applyDrawingStyle(model) {
     });
 }
 
-// CADRAGE CAMERA
-
 function frameCamera(model) {
-
     const box = new THREE.Box3().setFromObject(model);
-
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
 
-    const maxDim = Math.max(
-        size.x,
-        size.y,
-        size.z
-    );
-
+    const maxDim = Math.max(size.x, size.y, size.z);
     if (maxDim <= 0) return;
 
     camera.position.set(
@@ -267,7 +211,6 @@ function frameCamera(model) {
 
     camera.near = Math.max(maxDim / 100, 0.001);
     camera.far = maxDim * 100;
-
     camera.updateProjectionMatrix();
     controls.update();
 }
@@ -278,15 +221,10 @@ loader.load(
     "Configuration%20T5.T6%20L1%20-%20Assynt.glb",
 
     function(gltf) {
-
         baseModel = gltf.scene;
-
         applyDrawingStyle(baseModel);
-
         scene.add(baseModel);
-
         frameCamera(baseModel);
-
         status.textContent = "";
     },
 
@@ -294,71 +232,47 @@ loader.load(
 
     function(error) {
         console.error("Erreur banquette :", error);
-        status.textContent =
-            "Erreur de chargement de la banquette.";
+        status.textContent = "Erreur de chargement de la banquette.";
     }
 );
 
 // CHARGEMENT DES CUISINES
 
 function loadKitchen(key, file) {
-
     loader.load(
         file,
 
         function(gltf) {
-
             const model = gltf.scene;
-
             applyDrawingStyle(model);
 
             kitchens[key] = model;
-
             model.visible = false;
 
             scene.add(model);
-
             updateKitchens();
         },
 
         undefined,
 
         function(error) {
-            console.error(
-                "Erreur cuisine " + key,
-                error
-            );
-
+            console.error("Erreur cuisine " + key, error);
             status.textContent =
                 "Impossible de charger la cuisine " + key;
         }
     );
 }
 
-// CUISINE BEAG ADHAIR
-
-loadKitchen(
-    "beagAdhair",
-    "Beag%20adhair.glb"
-);
-
-// CUISINE BEAG
-
-loadKitchen(
-    "beag",
-    "Beag.glb"
-);
+loadKitchen("beagAdhair", "Beag%20adhair.glb");
+loadKitchen("beag", "Beag.glb");
+loadKitchen("corbett", "Corbett.glb");
 
 // AFFICHAGE DES CUISINES
 
 function updateKitchens() {
-
     Object.keys(kitchens).forEach(function(key) {
-
         if (kitchens[key]) {
-
-            kitchens[key].visible =
-                key === selectedKitchen;
+            kitchens[key].visible = key === selectedKitchen;
         }
     });
 }
@@ -368,28 +282,19 @@ function updateKitchens() {
 document
     .querySelectorAll('input[name="cuisine"]')
     .forEach(function(input) {
+        input.addEventListener('change', function() {
+            if (!input.checked) return;
 
-        input.addEventListener(
-            'change',
-            function() {
-
-                if (!input.checked) return;
-
-                selectedKitchen = input.value;
-
-                updateKitchens();
-            }
-        );
+            selectedKitchen = input.value;
+            updateKitchens();
+        });
     });
 
 // ANIMATION
 
 function animate() {
-
     requestAnimationFrame(animate);
-
     controls.update();
-
     renderer.render(scene, camera);
 }
 
@@ -398,16 +303,9 @@ animate();
 // REDIMENSIONNEMENT
 
 window.addEventListener('resize', function() {
-
-    camera.aspect =
-        window.innerWidth / window.innerHeight;
-
+    camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-
-    renderer.setSize(
-        window.innerWidth,
-        window.innerHeight
-    );
+    renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
 </script>
