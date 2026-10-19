@@ -33,11 +33,12 @@ html, body {
     border: 1px solid #ddd;
     border-radius: 8px;
     padding: 16px 20px;
+    min-width: 220px;
     box-shadow: 0 3px 15px rgba(0,0,0,0.08);
 }
 
 #options h3 {
-    margin: 0 0 12px;
+    margin: 0 0 14px;
     font-size: 15px;
     font-weight: 600;
 }
@@ -46,8 +47,13 @@ html, body {
     display: flex;
     align-items: center;
     gap: 10px;
+    margin-bottom: 12px;
     font-size: 13px;
     cursor: pointer;
+}
+
+.option:last-child {
+    margin-bottom: 0;
 }
 
 .option input {
@@ -73,11 +79,34 @@ html, body {
 <div id="viewer"></div>
 
 <div id="options">
-    <h3>Personnalisez votre aménagement</h3>
+    <h3>Choisissez votre cuisine</h3>
 
     <label class="option">
-        <input type="checkbox" id="beagAdhair">
+        <input
+            type="radio"
+            name="cuisine"
+            value="aucune"
+            checked
+        >
+        Aucune cuisine
+    </label>
+
+    <label class="option">
+        <input
+            type="radio"
+            name="cuisine"
+            value="beagAdhair"
+        >
         Cuisine Beag Adhair
+    </label>
+
+    <label class="option">
+        <input
+            type="radio"
+            name="cuisine"
+            value="beag"
+        >
+        Cuisine Beag
     </label>
 </div>
 
@@ -176,17 +205,18 @@ const edgeMaterial = new THREE.LineBasicMaterial({
 // CHARGEMENT
 
 const loader = new GLTFLoader();
-
-let baseModel = null;
-let kitchenModel = null;
-let kitchenRequested = false;
-
-const checkbox = document.getElementById('beagAdhair');
 const status = document.getElementById('status');
 
-checkbox.disabled = true;
+let baseModel = null;
 
-// APPLIQUER LE RENDU DESSIN
+const kitchens = {
+    beagAdhair: null,
+    beag: null
+};
+
+let selectedKitchen = "aucune";
+
+// STYLE DESSIN
 
 function applyDrawingStyle(model) {
 
@@ -210,7 +240,7 @@ function applyDrawingStyle(model) {
     });
 }
 
-// CADRER LA CAMERA SUR LA BANQUETTE
+// CADRAGE CAMERA
 
 function frameCamera(model) {
 
@@ -242,7 +272,7 @@ function frameCamera(model) {
     controls.update();
 }
 
-// CHARGER LA BANQUETTE
+// BANQUETTE ASSYNT
 
 loader.load(
     "Configuration%20T5.T6%20L1%20-%20Assynt.glb",
@@ -269,46 +299,88 @@ loader.load(
     }
 );
 
-// CHARGER LA CUISINE
+// CHARGEMENT DES CUISINES
 
-loader.load(
-    "Beag%20adhair.glb",
+function loadKitchen(key, file) {
 
-    function(gltf) {
+    loader.load(
+        file,
 
-        kitchenModel = gltf.scene;
+        function(gltf) {
 
-        applyDrawingStyle(kitchenModel);
+            const model = gltf.scene;
 
-        // La cuisine conserve les coordonnées
-        // définies lors de l'export Rhino.
+            applyDrawingStyle(model);
 
-        kitchenModel.visible = kitchenRequested;
+            kitchens[key] = model;
 
-        scene.add(kitchenModel);
+            model.visible = false;
 
-        checkbox.disabled = false;
-    },
+            scene.add(model);
 
-    undefined,
+            updateKitchens();
+        },
 
-    function(error) {
-        console.error("Erreur cuisine :", error);
-        status.textContent =
-            "Erreur de chargement de la cuisine.";
-    }
+        undefined,
+
+        function(error) {
+            console.error(
+                "Erreur cuisine " + key,
+                error
+            );
+
+            status.textContent =
+                "Impossible de charger la cuisine " + key;
+        }
+    );
+}
+
+// CUISINE BEAG ADHAIR
+
+loadKitchen(
+    "beagAdhair",
+    "Beag%20adhair.glb"
 );
 
-// AFFICHER OU MASQUER LA CUISINE
+// CUISINE BEAG
 
-checkbox.addEventListener('change', function() {
+loadKitchen(
+    "beag",
+    "Beag.glb"
+);
 
-    kitchenRequested = checkbox.checked;
+// AFFICHAGE DES CUISINES
 
-    if (kitchenModel) {
-        kitchenModel.visible = kitchenRequested;
-    }
-});
+function updateKitchens() {
+
+    Object.keys(kitchens).forEach(function(key) {
+
+        if (kitchens[key]) {
+
+            kitchens[key].visible =
+                key === selectedKitchen;
+        }
+    });
+}
+
+// SELECTION CLIENT
+
+document
+    .querySelectorAll('input[name="cuisine"]')
+    .forEach(function(input) {
+
+        input.addEventListener(
+            'change',
+            function() {
+
+                if (!input.checked) return;
+
+                selectedKitchen = input.value;
+
+                updateKitchens();
+            }
+        );
+    });
 
 // ANIMATION
 
