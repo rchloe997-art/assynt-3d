@@ -4,11 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Configurateur ASSYNT</title>
-
 <style>
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html, body {
     margin: 0;
@@ -52,9 +49,7 @@ html, body {
     cursor: pointer;
 }
 
-.option:last-child {
-    margin-bottom: 0;
-}
+.option:last-child { margin-bottom: 0; }
 
 .option input {
     width: 17px;
@@ -73,7 +68,6 @@ html, body {
 }
 </style>
 </head>
-
 <body>
 
 <div id="viewer"></div>
@@ -98,7 +92,12 @@ html, body {
 
     <label class="option">
         <input type="radio" name="cuisine" value="corbett">
-        Cuisine Corbett
+        Cuisine Corbett 450
+    </label>
+
+    <label class="option">
+        <input type="radio" name="cuisine" value="outdoor">
+        Cuisine Outdoor
     </label>
 </div>
 
@@ -119,8 +118,12 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+// SCENE
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
+
+// CAMERA
 
 const camera = new THREE.PerspectiveCamera(
     35,
@@ -129,14 +132,17 @@ const camera = new THREE.PerspectiveCamera(
     10000
 );
 
+// RENDU
+
 const renderer = new THREE.WebGLRenderer({
     antialias: true
 });
 
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
-
 document.getElementById('viewer').appendChild(renderer.domElement);
+
+// LUMIERES
 
 scene.add(new THREE.HemisphereLight(0xffffff, 0xffffff, 3));
 
@@ -144,12 +150,16 @@ const light = new THREE.DirectionalLight(0xffffff, 3);
 light.position.set(5, 10, 7);
 scene.add(light);
 
+// CONTROLES
+
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
 controls.enableZoom = true;
 controls.enableRotate = true;
 controls.enablePan = true;
+
+// STYLE MONOCHROME
 
 const drawingMaterial = new THREE.MeshStandardMaterial({
     color: 0xf2f2f0,
@@ -161,6 +171,8 @@ const edgeMaterial = new THREE.LineBasicMaterial({
     color: 0x303030
 });
 
+// CHARGEMENT
+
 const loader = new GLTFLoader();
 const status = document.getElementById('status');
 
@@ -170,8 +182,11 @@ let selectedKitchen = "aucune";
 const kitchens = {
     beagAdhair: null,
     beag: null,
-    corbett: null
+    corbett: null,
+    outdoor: null
 };
+
+// STYLE DESSIN
 
 function applyDrawingStyle(model) {
     model.traverse(function(child) {
@@ -184,14 +199,12 @@ function applyDrawingStyle(model) {
             25
         );
 
-        const lines = new THREE.LineSegments(
-            edges,
-            edgeMaterial
-        );
-
+        const lines = new THREE.LineSegments(edges, edgeMaterial);
         child.add(lines);
     });
 }
+
+// CADRAGE CAMERA
 
 function frameCamera(model) {
     const box = new THREE.Box3().setFromObject(model);
@@ -208,7 +221,6 @@ function frameCamera(model) {
     );
 
     controls.target.copy(center);
-
     camera.near = Math.max(maxDim / 100, 0.001);
     camera.far = maxDim * 100;
     camera.updateProjectionMatrix();
@@ -248,8 +260,8 @@ function loadKitchen(key, file) {
 
             kitchens[key] = model;
             model.visible = false;
-
             scene.add(model);
+
             updateKitchens();
         },
 
@@ -263,9 +275,12 @@ function loadKitchen(key, file) {
     );
 }
 
+// FICHIERS GLB
+
 loadKitchen("beagAdhair", "Beag%20adhair.glb");
 loadKitchen("beag", "Beag.glb");
 loadKitchen("corbett", "Corbett%20450.glb");
+loadKitchen("outdoor", "Outdoor.glb");
 
 // AFFICHAGE DES CUISINES
 
@@ -309,6 +324,5 @@ window.addEventListener('resize', function() {
 });
 
 </script>
-
 </body>
 </html>
