@@ -4,8 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Configurateur ASSYNT</title>
+
 <style>
-* { box-sizing: border-box; }
+* {
+    box-sizing: border-box;
+}
 
 html, body {
     margin: 0;
@@ -49,7 +52,9 @@ html, body {
     cursor: pointer;
 }
 
-.option:last-child { margin-bottom: 0; }
+.option:last-child {
+    margin-bottom: 0;
+}
 
 .option input {
     width: 17px;
@@ -68,6 +73,7 @@ html, body {
 }
 </style>
 </head>
+
 <body>
 
 <div id="viewer"></div>
@@ -98,6 +104,11 @@ html, body {
     <label class="option">
         <input type="radio" name="cuisine" value="outdoor">
         Cuisine Outdoor
+    </label>
+
+    <label class="option">
+        <input type="radio" name="cuisine" value="biadh500">
+        Cuisine Biadh 500
     </label>
 </div>
 
@@ -140,6 +151,7 @@ const renderer = new THREE.WebGLRenderer({
 
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
+
 document.getElementById('viewer').appendChild(renderer.domElement);
 
 // LUMIERES
@@ -183,13 +195,16 @@ const kitchens = {
     beagAdhair: null,
     beag: null,
     corbett: null,
-    outdoor: null
+    outdoor: null,
+    biadh500: null
 };
 
 // STYLE DESSIN
 
 function applyDrawingStyle(model) {
+
     model.traverse(function(child) {
+
         if (!child.isMesh) return;
 
         child.material = drawingMaterial;
@@ -199,7 +214,11 @@ function applyDrawingStyle(model) {
             25
         );
 
-        const lines = new THREE.LineSegments(edges, edgeMaterial);
+        const lines = new THREE.LineSegments(
+            edges,
+            edgeMaterial
+        );
+
         child.add(lines);
     });
 }
@@ -207,11 +226,14 @@ function applyDrawingStyle(model) {
 // CADRAGE CAMERA
 
 function frameCamera(model) {
+
     const box = new THREE.Box3().setFromObject(model);
+
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
 
     const maxDim = Math.max(size.x, size.y, size.z);
+
     if (maxDim <= 0) return;
 
     camera.position.set(
@@ -221,8 +243,10 @@ function frameCamera(model) {
     );
 
     controls.target.copy(center);
+
     camera.near = Math.max(maxDim / 100, 0.001);
     camera.far = maxDim * 100;
+
     camera.updateProjectionMatrix();
     controls.update();
 }
@@ -233,33 +257,46 @@ loader.load(
     "Configuration%20T5.T6%20L1%20-%20Assynt.glb",
 
     function(gltf) {
+
         baseModel = gltf.scene;
+
         applyDrawingStyle(baseModel);
+
         scene.add(baseModel);
+
         frameCamera(baseModel);
+
         status.textContent = "";
     },
 
     undefined,
 
     function(error) {
+
         console.error("Erreur banquette :", error);
-        status.textContent = "Erreur de chargement de la banquette.";
+
+        status.textContent =
+            "Erreur de chargement de la banquette.";
     }
 );
 
 // CHARGEMENT DES CUISINES
 
 function loadKitchen(key, file) {
+
     loader.load(
         file,
 
         function(gltf) {
+
             const model = gltf.scene;
+
             applyDrawingStyle(model);
 
             kitchens[key] = model;
+
             model.visible = false;
+
             scene.add(model);
 
             updateKitchens();
@@ -268,7 +305,9 @@ function loadKitchen(key, file) {
         undefined,
 
         function(error) {
+
             console.error("Erreur cuisine " + key, error);
+
             status.textContent =
                 "Impossible de charger la cuisine " + key;
         }
@@ -281,13 +320,18 @@ loadKitchen("beagAdhair", "Beag%20adhair.glb");
 loadKitchen("beag", "Beag.glb");
 loadKitchen("corbett", "Corbett%20450.glb");
 loadKitchen("outdoor", "Outdoor.glb");
+loadKitchen("biadh500", "Biadh%20500.glb");
 
 // AFFICHAGE DES CUISINES
 
 function updateKitchens() {
+
     Object.keys(kitchens).forEach(function(key) {
+
         if (kitchens[key]) {
-            kitchens[key].visible = key === selectedKitchen;
+
+            kitchens[key].visible =
+                key === selectedKitchen;
         }
     });
 }
@@ -297,10 +341,13 @@ function updateKitchens() {
 document
     .querySelectorAll('input[name="cuisine"]')
     .forEach(function(input) {
+
         input.addEventListener('change', function() {
+
             if (!input.checked) return;
 
             selectedKitchen = input.value;
+
             updateKitchens();
         });
     });
@@ -308,8 +355,11 @@ document
 // ANIMATION
 
 function animate() {
+
     requestAnimationFrame(animate);
+
     controls.update();
+
     renderer.render(scene, camera);
 }
 
@@ -318,11 +368,19 @@ animate();
 // REDIMENSIONNEMENT
 
 window.addEventListener('resize', function() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+
+    camera.aspect =
+        window.innerWidth / window.innerHeight;
+
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+    );
 });
 
 </script>
+
 </body>
 </html>
