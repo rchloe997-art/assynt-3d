@@ -226,19 +226,35 @@ controls.dampingFactor = 0.06;
 controls.enableZoom = true;
 controls.enableRotate = true;
 controls.enablePan = true;
-// Masquer l'indication dès la première interaction avec la 3D
-controls.addEventListener("start", () => {
-    const indication = document.getElementById("indication3D");
+// Afficher l'indication lorsque la 3D n'est pas manipulée
+const indication3D = document.getElementById("indication3D");
 
-    if (indication) {
-        indication.style.opacity = "0";
-        indication.style.pointerEvents = "none";
+let minuterieIndication;
 
-        setTimeout(() => {
-            indication.style.display = "none";
-        }, 300);
+function masquerIndication3D() {
+    clearTimeout(minuterieIndication);
+
+    if (indication3D) {
+        indication3D.style.opacity = "0";
     }
-});
+}
+
+function afficherIndication3D() {
+    clearTimeout(minuterieIndication);
+
+    minuterieIndication = setTimeout(() => {
+        if (indication3D) {
+            indication3D.style.display = "block";
+            indication3D.style.opacity = "1";
+        }
+    }, 3000);
+}
+
+// Dès que le visiteur manipule la 3D
+controls.addEventListener("start", masquerIndication3D);
+
+// Lorsqu'il arrête de manipuler la 3D
+controls.addEventListener("end", afficherIndication3D);
 // =====================================
 // STYLE MONOCHROME
 // =====================================
