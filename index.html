@@ -291,7 +291,14 @@ loadKitchen("outdoor", "Outdoor.glb");
 loadKitchen("biadh500", "Biadh%20500.glb");
 
 // AFFICHAGE DES CUISINES
+window.addEventListener("message", (event) => {
+  const cuisine = event.data?.cuisine;
 
+  if (cuisine === "aucune" || Object.prototype.hasOwnProperty.call(kitchens, cuisine)) {
+    selectedKitchen = cuisine;
+    updateKitchens();
+  }
+});
 function updateKitchens() {
 
     Object.keys(kitchens).forEach(function(key) {
