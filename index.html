@@ -205,7 +205,19 @@ controls.dampingFactor = 0.06;
 controls.enableZoom = true;
 controls.enableRotate = true;
 controls.enablePan = true;
+// Masquer l'indication dès la première interaction avec la 3D
+controls.addEventListener("start", () => {
+    const indication = document.getElementById("indication3D");
 
+    if (indication) {
+        indication.style.opacity = "0";
+        indication.style.pointerEvents = "none";
+
+        setTimeout(() => {
+            indication.style.display = "none";
+        }, 300);
+    }
+});
 // =====================================
 // STYLE MONOCHROME
 // =====================================
