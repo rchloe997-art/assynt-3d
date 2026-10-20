@@ -86,7 +86,28 @@ html, body {
 </head>
 
 <body>
-
+<div id="indication3D" style="
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 20;
+    background: rgba(255,255,255,0.92);
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-family: Arial, sans-serif;
+    color: #333333;
+    font-size: 13px;
+    line-height: 1.6;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+">
+    <div style="font-weight: 600;">
+        ↻ Vue 3D interactive
+    </div>
+    <div style="font-size: 12px; color: #777777;">
+        Faites glisser pour faire pivoter
+    </div>
+</div>
 <div id="viewer"></div>
 
 <!-- SELECTEUR JOUR / NUIT -->
