@@ -24,29 +24,37 @@ html, body {
     inset: 0;
 }
 
-/* BOUTONS JOUR / NUIT */
+/* BOUTONS JOUR / NUIT - BAS AU CENTRE */
 
 #modeSelector {
     position: absolute;
-    top: 20px;
-    right: 20px;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 10;
+
     display: flex;
-    padding: 4px;
     gap: 4px;
+    padding: 4px;
+
     background: #f5f5f5;
     border: 1px solid #e5e5e5;
     border-radius: 9px;
+
+    white-space: nowrap;
 }
 
 .modeButton {
     border: none;
     background: transparent;
     color: #555;
-    padding: 10px 18px;
+
+    padding: 10px 22px;
     border-radius: 6px;
+
     font-size: 13px;
     font-family: Arial, sans-serif;
+
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
 }
@@ -63,11 +71,16 @@ html, body {
 
 #status {
     position: absolute;
-    bottom: 15px;
-    left: 20px;
+    bottom: 75px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 10;
+
     font-size: 12px;
     color: #777;
+    text-align: center;
+    width: 90%;
+    pointer-events: none;
 }
 </style>
 </head>
@@ -76,7 +89,10 @@ html, body {
 
 <div id="viewer"></div>
 
+<!-- SELECTEUR JOUR / NUIT -->
+
 <div id="modeSelector">
+
     <button
         id="modeJour"
         class="modeButton active"
@@ -95,6 +111,7 @@ html, body {
     >
         Nuit
     </button>
+
 </div>
 
 <div id="status">Chargement du modèle 3D...</div>
@@ -114,12 +131,16 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+// =====================================
 // SCENE
+// =====================================
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
 
+// =====================================
 // CAMERA
+// =====================================
 
 const camera = new THREE.PerspectiveCamera(
     35,
@@ -128,35 +149,66 @@ const camera = new THREE.PerspectiveCamera(
     10000
 );
 
+// =====================================
 // RENDU
+// =====================================
 
 const renderer = new THREE.WebGLRenderer({
     antialias: true
 });
 
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(
+    Math.min(window.devicePixelRatio, 2)
+);
 
-document.getElementById('viewer').appendChild(renderer.domElement);
+renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+);
 
+document
+    .getElementById("viewer")
+    .appendChild(renderer.domElement);
+
+// =====================================
 // LUMIERES
+// =====================================
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0xffffff, 3));
+scene.add(
+    new THREE.HemisphereLight(
+        0xffffff,
+        0xffffff,
+        3
+    )
+);
 
-const light = new THREE.DirectionalLight(0xffffff, 3);
+const light = new THREE.DirectionalLight(
+    0xffffff,
+    3
+);
+
 light.position.set(5, 10, 7);
 scene.add(light);
 
+// =====================================
 // CONTROLES
+// =====================================
 
-const controls = new OrbitControls(camera, renderer.domElement);
+const controls = new OrbitControls(
+    camera,
+    renderer.domElement
+);
+
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
+
 controls.enableZoom = true;
 controls.enableRotate = true;
 controls.enablePan = true;
 
+// =====================================
 // STYLE MONOCHROME
+// =====================================
 
 const drawingMaterial = new THREE.MeshStandardMaterial({
     color: 0xf2f2f0,
@@ -168,10 +220,13 @@ const edgeMaterial = new THREE.LineBasicMaterial({
     color: 0x303030
 });
 
+// =====================================
 // CHARGEMENT
+// =====================================
 
 const loader = new GLTFLoader();
-const status = document.getElementById('status');
+
+const status = document.getElementById("status");
 
 let baseModel = null;
 let nightModel = null;
@@ -187,7 +242,9 @@ const kitchens = {
     biadh500: null
 };
 
+// =====================================
 // STYLE DESSIN
+// =====================================
 
 function applyDrawingStyle(model) {
 
@@ -211,16 +268,27 @@ function applyDrawingStyle(model) {
     });
 }
 
+// =====================================
 // CADRAGE CAMERA
+// =====================================
 
 function frameCamera(model) {
 
     const box = new THREE.Box3().setFromObject(model);
 
-    const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(
+        new THREE.Vector3()
+    );
 
-    const maxDim = Math.max(size.x, size.y, size.z);
+    const center = box.getCenter(
+        new THREE.Vector3()
+    );
+
+    const maxDim = Math.max(
+        size.x,
+        size.y,
+        size.z
+    );
 
     if (maxDim <= 0) return;
 
@@ -232,26 +300,38 @@ function frameCamera(model) {
 
     controls.target.copy(center);
 
-    camera.near = Math.max(maxDim / 100, 0.001);
+    camera.near = Math.max(
+        maxDim / 100,
+        0.001
+    );
+
     camera.far = maxDim * 100;
 
     camera.updateProjectionMatrix();
+
     controls.update();
 }
 
-// GESTION DES MODES JOUR / NUIT
+// =====================================
+// GESTION JOUR / NUIT
+// =====================================
 
-const boutonJour = document.getElementById("modeJour");
-const boutonNuit = document.getElementById("modeNuit");
+const boutonJour =
+    document.getElementById("modeJour");
+
+const boutonNuit =
+    document.getElementById("modeNuit");
 
 function updateBedMode() {
 
     if (baseModel) {
-        baseModel.visible = selectedMode === "jour";
+        baseModel.visible =
+            selectedMode === "jour";
     }
 
     if (nightModel) {
-        nightModel.visible = selectedMode === "nuit";
+        nightModel.visible =
+            selectedMode === "nuit";
     }
 
     boutonJour.classList.toggle(
@@ -275,20 +355,31 @@ function updateBedMode() {
     );
 }
 
-boutonJour.addEventListener("click", function() {
-    selectedMode = "jour";
-    updateBedMode();
-});
+boutonJour.addEventListener(
+    "click",
+    function() {
 
-boutonNuit.addEventListener("click", function() {
+        selectedMode = "jour";
 
-    if (!nightModel) return;
+        updateBedMode();
+    }
+);
 
-    selectedMode = "nuit";
-    updateBedMode();
-});
+boutonNuit.addEventListener(
+    "click",
+    function() {
 
-// BANQUETTE ASSYNT - MODE JOUR
+        if (!nightModel) return;
+
+        selectedMode = "nuit";
+
+        updateBedMode();
+    }
+);
+
+// =====================================
+// BANQUETTE - MODE JOUR
+// =====================================
 
 loader.load(
     "Configuration%20T5.T6%20L1%20-%20Assynt.glb",
@@ -312,14 +403,19 @@ loader.load(
 
     function(error) {
 
-        console.error("Erreur banquette jour :", error);
+        console.error(
+            "Erreur banquette jour :",
+            error
+        );
 
         status.textContent =
             "Erreur de chargement de la banquette.";
     }
 );
 
-// BANQUETTE ASSYNT - MODE NUIT
+// =====================================
+// BANQUETTE - MODE NUIT
+// =====================================
 
 loader.load(
     "lit_nuit.glb",
@@ -341,14 +437,19 @@ loader.load(
 
     function(error) {
 
-        console.error("Erreur banquette nuit :", error);
+        console.error(
+            "Erreur banquette nuit :",
+            error
+        );
 
         status.textContent =
             "Impossible de charger le mode nuit.";
     }
 );
 
+// =====================================
 // CHARGEMENT DES CUISINES
+// =====================================
 
 function loadKitchen(key, file) {
 
@@ -374,7 +475,10 @@ function loadKitchen(key, file) {
 
         function(error) {
 
-            console.error("Erreur cuisine " + key, error);
+            console.error(
+                "Erreur cuisine " + key,
+                error
+            );
 
             status.textContent =
                 "Impossible de charger la cuisine " + key;
@@ -382,53 +486,93 @@ function loadKitchen(key, file) {
     );
 }
 
+// =====================================
 // FICHIERS GLB
+// =====================================
 
-loadKitchen("beagAdhair", "Beag%20adhair.glb");
-loadKitchen("beag", "Beag.glb");
-loadKitchen("corbett", "Corbett%20450.glb");
-loadKitchen("outdoor", "Outdoor.glb");
-loadKitchen("biadh500", "Biadh%20500.glb");
+loadKitchen(
+    "beagAdhair",
+    "Beag%20adhair.glb"
+);
 
+loadKitchen(
+    "beag",
+    "Beag.glb"
+);
+
+loadKitchen(
+    "corbett",
+    "Corbett%20450.glb"
+);
+
+loadKitchen(
+    "outdoor",
+    "Outdoor.glb"
+);
+
+loadKitchen(
+    "biadh500",
+    "Biadh%20500.glb"
+);
+
+// =====================================
 // AFFICHAGE DES CUISINES
+// =====================================
 
 function updateKitchens() {
 
-    Object.keys(kitchens).forEach(function(key) {
+    Object.keys(kitchens).forEach(
+        function(key) {
 
-        if (kitchens[key]) {
-            kitchens[key].visible =
-                key === selectedKitchen;
+            if (kitchens[key]) {
+
+                kitchens[key].visible =
+                    key === selectedKitchen;
+            }
         }
-    });
+    );
 }
 
+// =====================================
 // COMMUNICATION AVEC WIX
+// =====================================
 
-window.addEventListener("message", function(event) {
+window.addEventListener(
+    "message",
+    function(event) {
 
-    const cuisine = event.data?.cuisine;
+        const cuisine = event.data?.cuisine;
 
-    if (
-        cuisine === "aucune" ||
-        Object.prototype.hasOwnProperty.call(kitchens, cuisine)
-    ) {
-        selectedKitchen = cuisine;
-        updateKitchens();
+        if (
+            cuisine === "aucune" ||
+            Object.prototype.hasOwnProperty.call(
+                kitchens,
+                cuisine
+            )
+        ) {
+
+            selectedKitchen = cuisine;
+
+            updateKitchens();
+        }
+
+        const mode = event.data?.mode;
+
+        if (
+            mode === "jour" ||
+            (mode === "nuit" && nightModel)
+        ) {
+
+            selectedMode = mode;
+
+            updateBedMode();
+        }
     }
+);
 
-    const mode = event.data?.mode;
-
-    if (
-        mode === "jour" ||
-        (mode === "nuit" && nightModel)
-    ) {
-        selectedMode = mode;
-        updateBedMode();
-    }
-});
-
+// =====================================
 // ANIMATION
+// =====================================
 
 function animate() {
 
@@ -436,25 +580,34 @@ function animate() {
 
     controls.update();
 
-    renderer.render(scene, camera);
+    renderer.render(
+        scene,
+        camera
+    );
 }
 
 animate();
 
+// =====================================
 // REDIMENSIONNEMENT
+// =====================================
 
-window.addEventListener('resize', function() {
+window.addEventListener(
+    "resize",
+    function() {
 
-    camera.aspect =
-        window.innerWidth / window.innerHeight;
+        camera.aspect =
+            window.innerWidth /
+            window.innerHeight;
 
-    camera.updateProjectionMatrix();
+        camera.updateProjectionMatrix();
 
-    renderer.setSize(
-        window.innerWidth,
-        window.innerHeight
-    );
-});
+        renderer.setSize(
+            window.innerWidth,
+            window.innerHeight
+        );
+    }
+);
 
 </script>
 
