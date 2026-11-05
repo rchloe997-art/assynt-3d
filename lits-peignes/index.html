@@ -1,1 +1,697 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
+  <title>ASSYNT – Configurateur lits peignes</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #ffffff;
+      font-family: Arial, sans-serif;
+    }
+
+    #viewer {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 300px;
+      background: #ffffff;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.85);
+      color: #555;
+      font-size: 13px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    #loading.hidden {
+      display: none;
+    }
+
+    #hint {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 9px 14px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.85);
+      color: #555;
+      font-size: 12px;
+      text-align: center;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    #error {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      display: none;
+      padding: 10px;
+      background: #fff1f0;
+      color: #9d2525;
+      border-radius: 6px;
+      font-size: 12px;
+      z-index: 20;
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three":
+        "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+
+      "three/addons/":
+        "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+
+<body>
+
+<div id="viewer">
+
+  <div id="loading">
+    Chargement de votre aménagement 3D...
+  </div>
+
+  <div id="error"></div>
+
+  <div id="hint">
+    ↻ Faites glisser pour faire pivoter · Molette pour zoomer
+  </div>
+
+</div>
+
+<script type="module">
+
+import * as THREE from "three";
+
+import { OrbitControls } from
+  "three/addons/controls/OrbitControls.js";
+
+import { GLTFLoader } from
+  "three/addons/loaders/GLTFLoader.js";
+
+
+// ==========================================
+// SCÈNE THREE.JS
+// ==========================================
+
+const container = document.getElementById("viewer");
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xffffff);
+
+const camera = new THREE.PerspectiveCamera(
+  35,
+  1,
+  0.01,
+  1000
+);
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  alpha: false
+});
+
+renderer.setPixelRatio(
+  Math.min(window.devicePixelRatio, 2)
+);
+
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+renderer.setSize(
+  container.clientWidth,
+  container.clientHeight
+);
+
+container.appendChild(renderer.domElement);
+
+
+// ==========================================
+// ÉCLAIRAGE
+// ==========================================
+
+scene.add(
+  new THREE.HemisphereLight(
+    0xffffff,
+    0xdedede,
+    2.5
+  )
+);
+
+const light1 = new THREE.DirectionalLight(
+  0xffffff,
+  2.2
+);
+
+light1.position.set(5, 8, 7);
+scene.add(light1);
+
+const light2 = new THREE.DirectionalLight(
+  0xffffff,
+  1.0
+);
+
+light2.position.set(-5, 4, -6);
+scene.add(light2);
+
+
+// ==========================================
+// CONTRÔLES CAMÉRA
+// ==========================================
+
+const controls = new OrbitControls(
+  camera,
+  renderer.domElement
+);
+
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+
+controls.enablePan = false;
+
+controls.minDistance = 0.5;
+controls.maxDistance = 100;
+
+
+// ==========================================
+// CONFIGURATION PAR DÉFAUT
+// ==========================================
+
+const configuration = {
+  lit: "torridon",
+  rangement: "sorcha",
+  cuisine: "beagAdhair",
+  mode: "jour"
+};
+
+
+// ==========================================
+// FICHIERS 3D
+// ==========================================
+
+const fichiers = {
+
+  lits: {
+    torridon: {
+      jour: "torridon_jour.glb",
+      nuit: "torridon_nuit.glb"
+    },
+
+    schiehallion: {
+      jour: "schiehallion_jour.glb",
+      nuit: "schiehallion_nuit.glb"
+    }
+  },
+
+  rangements: {
+    sorcha: {
+      jour: "sorcha_jour.glb",
+      nuit: "sorcha_nuit.glb"
+    },
+
+    clachan: {
+      jour: "clachan_jour.glb",
+      nuit: "clachan_nuit.glb"
+    }
+  },
+
+  cuisines: {
+    beag: "beag.glb",
+    beagAdhair: "beag_Adhair.glb",
+    corbett: "corbett.glb",
+    biadh: "biadh.glb",
+    outdoor: "outdoor.glb"
+  }
+
+};
+
+
+// ==========================================
+// CHARGEMENT DES MODÈLES
+// ==========================================
+
+const loader = new GLTFLoader();
+
+const cache = new Map();
+
+const modules = {
+  lit: null,
+  rangement: null,
+  cuisine: null
+};
+
+const requetes = {
+  lit: 0,
+  rangement: 0,
+  cuisine: 0
+};
+
+let cameraInitialisee = false;
+
+const loading = document.getElementById("loading");
+const errorBox = document.getElementById("error");
+
+
+// ==========================================
+// STYLE DES MODÈLES
+// ==========================================
+
+function appliquerStyle(objet) {
+
+  objet.traverse(child => {
+
+    if (!child.isMesh) return;
+
+    const originalMaterial = child.material;
+
+    if (Array.isArray(originalMaterial)) {
+      originalMaterial.forEach(mat => {
+        if (mat) mat.dispose();
+      });
+    } else if (originalMaterial) {
+      originalMaterial.dispose();
+    }
+
+    child.material = new THREE.MeshStandardMaterial({
+      color: 0xf2f2f0,
+      roughness: 0.85,
+      metalness: 0,
+      side: THREE.DoubleSide
+    });
+
+    const edges = new THREE.EdgesGeometry(
+      child.geometry,
+      25
+    );
+
+    const lines = new THREE.LineSegments(
+      edges,
+      new THREE.LineBasicMaterial({
+        color: 0x303030,
+        transparent: true,
+        opacity: 0.75
+      })
+    );
+
+    child.add(lines);
+
+  });
+
+}
+
+
+// ==========================================
+// RÉCUPÉRER UN MODÈLE
+// ==========================================
+
+async function recupererModele(nomFichier) {
+
+  if (!cache.has(nomFichier)) {
+
+    const promesse = new Promise(
+      (resolve, reject) => {
+
+        loader.load(
+          encodeURI(nomFichier),
+
+          gltf => {
+
+            appliquerStyle(gltf.scene);
+
+            resolve(gltf.scene);
+
+          },
+
+          undefined,
+
+          reject
+        );
+
+      }
+    );
+
+    cache.set(nomFichier, promesse);
+  }
+
+  const original = await cache.get(nomFichier);
+
+  return original.clone(true);
+
+}
+
+
+// ==========================================
+// CHANGER UN MODULE
+// ==========================================
+
+async function changerModule(type, nomFichier) {
+
+  const numeroRequete = ++requetes[type];
+
+  try {
+
+    const nouveauModele =
+      await recupererModele(nomFichier);
+
+    // Ignore les anciens chargements
+    if (numeroRequete !== requetes[type]) {
+      return;
+    }
+
+    if (modules[type]) {
+      scene.remove(modules[type]);
+    }
+
+    modules[type] = nouveauModele;
+
+    scene.add(nouveauModele);
+
+    errorBox.style.display = "none";
+
+    if (!cameraInitialisee) {
+      cadrerCamera();
+      cameraInitialisee = true;
+    }
+
+  } catch (erreur) {
+
+    console.error(
+      "Erreur de chargement :",
+      nomFichier,
+      erreur
+    );
+
+    errorBox.textContent =
+      "Impossible de charger le modèle : " +
+      nomFichier;
+
+    errorBox.style.display = "block";
+
+  }
+
+}
+
+
+// ==========================================
+// CADRAGE INITIAL DE LA CAMÉRA
+// ==========================================
+
+function cadrerCamera() {
+
+  const box = new THREE.Box3();
+
+  Object.values(modules).forEach(module => {
+
+    if (module) {
+      box.expandByObject(module);
+    }
+
+  });
+
+  if (box.isEmpty()) return;
+
+  const center = box.getCenter(
+    new THREE.Vector3()
+  );
+
+  const size = box.getSize(
+    new THREE.Vector3()
+  );
+
+  const maxDim = Math.max(
+    size.x,
+    size.y,
+    size.z
+  );
+
+  camera.position.set(
+    center.x + maxDim * 1.15,
+    center.y + maxDim * 0.70,
+    center.z + maxDim * 1.15
+  );
+
+  camera.near = Math.max(maxDim / 1000, 0.01);
+  camera.far = Math.max(maxDim * 100, 100);
+
+  camera.updateProjectionMatrix();
+
+  controls.target.copy(center);
+  controls.update();
+
+}
+
+
+// ==========================================
+// MISE À JOUR DU LIT
+// ==========================================
+
+function actualiserLit() {
+
+  const fichier =
+    fichiers.lits[configuration.lit]?.[
+      configuration.mode
+    ];
+
+  if (!fichier) return;
+
+  return changerModule("lit", fichier);
+
+}
+
+
+// ==========================================
+// MISE À JOUR DU RANGEMENT
+// ==========================================
+
+function actualiserRangement() {
+
+  const fichier =
+    fichiers.rangements[
+      configuration.rangement
+    ]?.[configuration.mode];
+
+  if (!fichier) return;
+
+  return changerModule("rangement", fichier);
+
+}
+
+
+// ==========================================
+// MISE À JOUR DE LA CUISINE
+// ==========================================
+
+function actualiserCuisine() {
+
+  const fichier =
+    fichiers.cuisines[configuration.cuisine];
+
+  if (!fichier) return;
+
+  return changerModule("cuisine", fichier);
+
+}
+
+
+// ==========================================
+// COMMUNICATION AVEC WIX
+// ==========================================
+
+window.addEventListener("message", event => {
+
+  const data = event.data;
+
+  if (!data || typeof data !== "object") {
+    return;
+  }
+
+  let changerLit = false;
+  let changerRangement = false;
+  let changerCuisine = false;
+
+  // Lit
+  if (
+    data.lit &&
+    fichiers.lits[data.lit] &&
+    data.lit !== configuration.lit
+  ) {
+
+    configuration.lit = data.lit;
+    changerLit = true;
+
+  }
+
+  // Rangement
+  if (
+    data.rangement &&
+    fichiers.rangements[data.rangement] &&
+    data.rangement !== configuration.rangement
+  ) {
+
+    configuration.rangement = data.rangement;
+    changerRangement = true;
+
+  }
+
+  // Cuisine
+  if (
+    data.cuisine &&
+    fichiers.cuisines[data.cuisine] &&
+    data.cuisine !== configuration.cuisine
+  ) {
+
+    configuration.cuisine = data.cuisine;
+    changerCuisine = true;
+
+  }
+
+  // Mode jour / nuit
+  if (
+    (data.mode === "jour" || data.mode === "nuit") &&
+    data.mode !== configuration.mode
+  ) {
+
+    configuration.mode = data.mode;
+
+    // Seuls le lit et le rangement changent
+    changerLit = true;
+    changerRangement = true;
+
+  }
+
+  if (changerLit) {
+    actualiserLit();
+  }
+
+  if (changerRangement) {
+    actualiserRangement();
+  }
+
+  if (changerCuisine) {
+    actualiserCuisine();
+  }
+
+});
+
+
+// ==========================================
+// INITIALISATION
+// ==========================================
+
+async function initialiser() {
+
+  try {
+
+    await Promise.all([
+      actualiserLit(),
+      actualiserRangement(),
+      actualiserCuisine()
+    ]);
+
+    // Cadrage sur les trois modules
+    cadrerCamera();
+    cameraInitialisee = true;
+
+    loading.classList.add("hidden");
+
+    // Informe Wix que le visualiseur est prêt
+    window.parent.postMessage(
+      { type: "litsPeignesReady" },
+      "*"
+    );
+
+  } catch (erreur) {
+
+    console.error(
+      "Erreur initialisation visualiseur :",
+      erreur
+    );
+
+    loading.classList.add("hidden");
+
+  }
+
+}
+
+initialiser();
+
+
+// ==========================================
+// ADAPTATION À LA TAILLE DU CONTENEUR
+// ==========================================
+
+function redimensionner() {
+
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
+  if (!width || !height) return;
+
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(width, height);
+
+}
+
+const observer = new ResizeObserver(
+  redimensionner
+);
+
+observer.observe(container);
+
+redimensionner();
+
+
+// ==========================================
+// ANIMATION
+// ==========================================
+
+function animer() {
+
+  requestAnimationFrame(animer);
+
+  controls.update();
+
+  renderer.render(scene, camera);
+
+}
+
+animer();
+
+</script>
+
+</body>
+</html>
