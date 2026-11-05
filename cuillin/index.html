@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Configurateur 3D CUILLIN – ASSYNT</title>
+<title>Configurateur CUILLIN – ASSYNT</title>
 
 <style>
 * {
@@ -25,107 +24,43 @@ html, body {
     inset: 0;
 }
 
-/* BOUTONS DE POSITION */
-
-#positionSelector {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
-
-    display: flex;
-    gap: 4px;
-    padding: 4px;
-
-    background: #f5f5f5;
-    border: 1px solid #e5e5e5;
-    border-radius: 9px;
-
-    white-space: nowrap;
-}
-
-.positionButton {
-    border: none;
-    background: transparent;
-    color: #555555;
-
-    padding: 10px 18px;
-    border-radius: 6px;
-
-    font-size: 13px;
-    font-family: Arial, sans-serif;
-
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-}
-
-.positionButton.active {
-    background: #BC9B5D;
-    color: #ffffff;
-}
-
-.positionButton:disabled {
-    opacity: 0.5;
-    cursor: wait;
-}
-
-/* INDICATION 3D */
-
 #indication3D {
     position: absolute;
     bottom: 20px;
     left: 20px;
     z-index: 20;
-
     background: rgba(255,255,255,0.92);
     padding: 12px 16px;
     border-radius: 10px;
-
     color: #333333;
     font-size: 13px;
     line-height: 1.6;
-
     pointer-events: none;
     transition: opacity 0.3s ease;
 }
 
-#indication3D .subtitle {
-    font-size: 12px;
-    color: #777777;
-}
-
-/* STATUT */
-
 #status {
     position: absolute;
-    bottom: 85px;
+    bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
-
-    width: 90%;
-    text-align: center;
     font-size: 12px;
     color: #777777;
-
+    text-align: center;
+    width: 90%;
     pointer-events: none;
 }
+</style>
 
-@media (max-width: 600px) {
-    .positionButton {
-        padding: 9px 12px;
-        font-size: 12px;
-    }
-
-    #indication3D {
-        bottom: 78px;
-        left: 10px;
-        padding: 8px 10px;
-        font-size: 11px;
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
     }
 }
-</style>
+</script>
 </head>
 
 <body>
@@ -136,68 +71,25 @@ html, body {
     <div style="font-weight:600;">
         ↻ Vue 3D interactive
     </div>
-    <div class="subtitle">
+    <div style="font-size:12px;color:#777777;">
         Faites glisser pour faire pivoter
     </div>
 </div>
 
-<div id="positionSelector">
-
-    <button
-        class="positionButton active"
-        data-position="assise"
-        type="button">
-        Assise
-    </button>
-
-    <button
-        class="positionButton"
-        data-position="detente"
-        type="button">
-        Détente
-    </button>
-
-    <button
-        class="positionButton"
-        data-position="couchage"
-        type="button">
-        Couchage
-    </button>
-
-</div>
-
-<div id="status">
-    Chargement du modèle 3D...
-</div>
-
-<script type="importmap">
-{
-    "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
-    }
-}
-</script>
+<div id="status">Chargement du modèle 3D...</div>
 
 <script type="module">
 
 import * as THREE from "three";
-
-import { GLTFLoader }
-from "three/addons/loaders/GLTFLoader.js";
-
-import { OrbitControls }
-from "three/addons/controls/OrbitControls.js";
-
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 // =====================================
 // SCÈNE
 // =====================================
 
 const scene = new THREE.Scene();
-
 scene.background = new THREE.Color(0xffffff);
-
 
 // =====================================
 // CAMÉRA
@@ -209,7 +101,6 @@ const camera = new THREE.PerspectiveCamera(
     0.01,
     10000
 );
-
 
 // =====================================
 // RENDU
@@ -231,7 +122,6 @@ renderer.setSize(
 document.getElementById("viewer")
     .appendChild(renderer.domElement);
 
-
 // =====================================
 // LUMIÈRES
 // =====================================
@@ -250,12 +140,10 @@ const light = new THREE.DirectionalLight(
 );
 
 light.position.set(5, 10, 7);
-
 scene.add(light);
 
-
 // =====================================
-// CONTRÔLES
+// CONTRÔLES 3D
 // =====================================
 
 const controls = new OrbitControls(
@@ -270,9 +158,8 @@ controls.enableZoom = true;
 controls.enableRotate = true;
 controls.enablePan = true;
 
-
 // =====================================
-// INDICATION INTERACTIVE
+// INDICATION 3D
 // =====================================
 
 const indication3D =
@@ -280,34 +167,22 @@ const indication3D =
 
 let minuterieIndication;
 
-function masquerIndication3D() {
+controls.addEventListener("start", () => {
 
     clearTimeout(minuterieIndication);
-
     indication3D.style.opacity = "0";
-}
 
-function afficherIndication3D() {
+});
+
+controls.addEventListener("end", () => {
 
     clearTimeout(minuterieIndication);
 
     minuterieIndication = setTimeout(() => {
-
         indication3D.style.opacity = "1";
-
     }, 3000);
-}
 
-controls.addEventListener(
-    "start",
-    masquerIndication3D
-);
-
-controls.addEventListener(
-    "end",
-    afficherIndication3D
-);
-
+});
 
 // =====================================
 // STYLE DESSIN TECHNIQUE
@@ -327,7 +202,7 @@ const edgeMaterial =
 
 function applyDrawingStyle(model) {
 
-    model.traverse(function(child) {
+    model.traverse(child => {
 
         if (!child.isMesh) return;
 
@@ -347,17 +222,6 @@ function applyDrawingStyle(model) {
 
     });
 }
-
-
-// =====================================
-// CHARGEMENT GLB
-// =====================================
-
-const loader = new GLTFLoader();
-
-const status =
-    document.getElementById("status");
-
 
 // =====================================
 // FICHIERS CUILLIN
@@ -385,7 +249,6 @@ const cuillinFiles = {
 
 };
 
-
 // =====================================
 // FICHIERS CUISINES
 // =====================================
@@ -398,54 +261,52 @@ const kitchenFiles = {
 
 };
 
-
 // =====================================
-// SÉLECTION ACTUELLE
+// CONFIGURATION PAR DÉFAUT
 // =====================================
 
 let selectedVersion = "explorer";
-
 let selectedPosition = "assise";
-
 let selectedKitchen = "beagAdhair";
 
-
 // =====================================
-// STOCKAGE DES MODÈLES
+// CHARGEMENT DES MODÈLES
 // =====================================
 
-const bedModels = {};
+const loader = new GLTFLoader();
 
-const kitchenModels = {};
+const status =
+    document.getElementById("status");
 
+const bedCache = new Map();
+const kitchenCache = new Map();
 const pendingLoads = new Map();
 
 let activeBed = null;
-
 let activeKitchen = null;
 
 let cameraInitialized = false;
 
-let requestId = 0;
-
+let bedRequest = 0;
+let kitchenRequest = 0;
 
 // =====================================
-// CHARGER UN MODÈLE
+// CHARGER UN FICHIER GLB
 // =====================================
 
-function loadModel(file) {
+function loadModel(filename) {
 
-    if (pendingLoads.has(file)) {
-        return pendingLoads.get(file);
+    if (pendingLoads.has(filename)) {
+        return pendingLoads.get(filename);
     }
 
     const promise = new Promise((resolve, reject) => {
 
         loader.load(
 
-            file,
+            encodeURI(filename),
 
-            function(gltf) {
+            gltf => {
 
                 const model = gltf.scene;
 
@@ -461,11 +322,11 @@ function loadModel(file) {
 
             undefined,
 
-            function(error) {
+            error => {
 
                 console.error(
                     "Erreur de chargement :",
-                    file,
+                    filename,
                     error
                 );
 
@@ -477,14 +338,18 @@ function loadModel(file) {
 
     });
 
-    pendingLoads.set(file, promise);
+    pendingLoads.set(filename, promise);
+
+    promise.then(
+        () => pendingLoads.delete(filename),
+        () => pendingLoads.delete(filename)
+    );
 
     return promise;
 }
 
-
 // =====================================
-// CADRAGE CAMÉRA
+// CADRAGE DE LA CAMÉRA
 // =====================================
 
 function frameCamera(model) {
@@ -530,118 +395,77 @@ function frameCamera(model) {
     controls.update();
 }
 
-
 // =====================================
-// BOUTONS DE POSITION
+// CHANGEMENT DE VERSION / POSITION
 // =====================================
 
-const positionButtons =
-    document.querySelectorAll(
-        ".positionButton"
-    );
+async function updateBed() {
 
-function updatePositionButtons() {
+    const request = ++bedRequest;
 
-    positionButtons.forEach(button => {
+    const version = selectedVersion;
+    const position = selectedPosition;
 
-        const active =
-            button.dataset.position ===
-            selectedPosition;
+    const filename =
+        cuillinFiles[version][position];
 
-        button.classList.toggle(
-            "active",
-            active
-        );
+    status.textContent =
+        "Chargement du CUILLIN...";
 
-        button.setAttribute(
-            "aria-pressed",
-            String(active)
-        );
+    try {
 
-    });
-}
+        let model = bedCache.get(filename);
 
-positionButtons.forEach(button => {
+        if (!model) {
 
-    button.addEventListener(
-        "click",
-        function() {
+            model = await loadModel(filename);
 
-            selectedPosition =
-                button.dataset.position;
-
-            updatePositionButtons();
-
-            updateConfiguration();
+            bedCache.set(filename, model);
 
         }
-    );
 
-});
-
-
-// =====================================
-// AFFICHAGE DU LIT
-// =====================================
-
-async function updateBed(id) {
-
-    const file =
-        cuillinFiles[selectedVersion]
-        [selectedPosition];
-
-    if (bedModels[file]) {
-
-        if (id !== requestId) return;
+        if (request !== bedRequest) return;
 
         if (activeBed) {
             activeBed.visible = false;
         }
 
-        activeBed = bedModels[file];
-
+        activeBed = model;
         activeBed.visible = true;
 
         if (!cameraInitialized) {
 
-            frameCamera(activeBed);
+            frameCamera(model);
 
             cameraInitialized = true;
+
         }
 
-        return;
-    }
+        status.textContent = "";
 
-    const model = await loadModel(file);
+    } catch (error) {
 
-    bedModels[file] = model;
+        if (request !== bedRequest) return;
 
-    if (id !== requestId) return;
+        console.error(error);
 
-    if (activeBed) {
-        activeBed.visible = false;
-    }
+        status.textContent =
+            "Impossible de charger le CUILLIN.";
 
-    activeBed = model;
-
-    activeBed.visible = true;
-
-    if (!cameraInitialized) {
-
-        frameCamera(activeBed);
-
-        cameraInitialized = true;
     }
 }
 
-
 // =====================================
-// AFFICHAGE DE LA CUISINE
+// CHANGEMENT DE CUISINE
 // =====================================
 
-async function updateKitchen(id) {
+async function updateKitchen() {
 
-    if (selectedKitchen === "aucune") {
+    const request = ++kitchenRequest;
+
+    const kitchen = selectedKitchen;
+
+    if (kitchen === "aucune") {
 
         if (activeKitchen) {
             activeKitchen.visible = false;
@@ -652,177 +476,124 @@ async function updateKitchen(id) {
         return;
     }
 
-    const file =
-        kitchenFiles[selectedKitchen];
-
-    if (!file) return;
-
-    if (!kitchenModels[file]) {
-
-        kitchenModels[file] =
-            await loadModel(file);
-    }
-
-    if (id !== requestId) return;
-
-    if (activeKitchen) {
-        activeKitchen.visible = false;
-    }
-
-    activeKitchen = kitchenModels[file];
-
-    activeKitchen.visible = true;
-}
-
-
-// =====================================
-// MISE À JOUR CONFIGURATION
-// =====================================
-
-async function updateConfiguration() {
-
-    const id = ++requestId;
-
-    status.textContent =
-        "Chargement de la configuration...";
+    const filename = kitchenFiles[kitchen];
 
     try {
 
-        await Promise.all([
-            updateBed(id),
-            updateKitchen(id)
-        ]);
+        let model = kitchenCache.get(filename);
 
-        if (id !== requestId) return;
+        if (!model) {
 
-        status.textContent = "";
+            model = await loadModel(filename);
 
-    } catch(error) {
+            kitchenCache.set(filename, model);
 
-        if (id !== requestId) return;
+        }
+
+        if (request !== kitchenRequest) return;
+
+        if (activeKitchen) {
+            activeKitchen.visible = false;
+        }
+
+        activeKitchen = model;
+        activeKitchen.visible = true;
+
+    } catch (error) {
+
+        if (request !== kitchenRequest) return;
 
         console.error(error);
 
         status.textContent =
-            "Impossible de charger la configuration 3D.";
+            "Impossible de charger la cuisine.";
+
     }
 }
-
 
 // =====================================
 // COMMUNICATION AVEC WIX
 // =====================================
 
-window.addEventListener(
-    "message",
-    function(event) {
+window.addEventListener("message", event => {
 
-        const data = event.data;
+    const data = event.data;
 
-        if (!data || typeof data !== "object") {
-            return;
-        }
-
-        let changed = false;
-
-        // VERSION DU CUILLIN
-
-        if (
-            typeof data.version === "string" &&
-            Object.prototype.hasOwnProperty.call(
-                cuillinFiles,
-                data.version
-            )
-        ) {
-
-            if (selectedVersion !== data.version) {
-
-                selectedVersion = data.version;
-
-                changed = true;
-            }
-        }
-
-        // POSITION DU LIT
-
-        if (
-            typeof data.position === "string" &&
-            ["assise", "detente", "couchage"]
-                .includes(data.position)
-        ) {
-
-            if (selectedPosition !== data.position) {
-
-                selectedPosition = data.position;
-
-                changed = true;
-            }
-
-            updatePositionButtons();
-        }
-
-        // CUISINE
-
-        if (
-            typeof data.cuisine === "string" &&
-            (
-                data.cuisine === "aucune" ||
-                Object.prototype.hasOwnProperty.call(
-                    kitchenFiles,
-                    data.cuisine
-                )
-            )
-        ) {
-
-            if (selectedKitchen !== data.cuisine) {
-
-                selectedKitchen = data.cuisine;
-
-                changed = true;
-            }
-        }
-
-        if (changed) {
-            updateConfiguration();
-        }
-
+    if (!data || typeof data !== "object") {
+        return;
     }
-);
 
+    let bedChanged = false;
 
-// =====================================
-// SIGNAL VERS WIX
-// =====================================
+    // VERSION DU CUILLIN
 
-function notifyWix() {
+    if (
+        typeof data.version === "string" &&
+        Object.prototype.hasOwnProperty.call(
+            cuillinFiles,
+            data.version
+        )
+    ) {
 
-    if (window.parent === window) return;
+        if (selectedVersion !== data.version) {
 
-    window.parent.postMessage(
-        {
-            type: "cuillinReady",
-            version: selectedVersion,
-            position: selectedPosition,
-            cuisine: selectedKitchen
-        },
-        "*"
-    );
-}
+            selectedVersion = data.version;
 
+            bedChanged = true;
+
+        }
+    }
+
+    // POSITION DU CUILLIN
+
+    if (
+        typeof data.position === "string" &&
+        ["assise", "detente", "couchage"]
+            .includes(data.position)
+    ) {
+
+        if (selectedPosition !== data.position) {
+
+            selectedPosition = data.position;
+
+            bedChanged = true;
+
+        }
+    }
+
+    // CUISINE
+
+    if (
+        data.cuisine === "aucune" ||
+        Object.prototype.hasOwnProperty.call(
+            kitchenFiles,
+            data.cuisine
+        )
+    ) {
+
+        if (selectedKitchen !== data.cuisine) {
+
+            selectedKitchen = data.cuisine;
+
+            updateKitchen();
+
+        }
+    }
+
+    // MISE À JOUR DU LIT
+
+    if (bedChanged) {
+        updateBed();
+    }
+
+});
 
 // =====================================
 // INITIALISATION
 // =====================================
 
-async function initialize() {
-
-    await updateConfiguration();
-
-    notifyWix();
-}
-
-initialize();
-
+updateBed();
+updateKitchen();
 
 // =====================================
 // ANIMATION
@@ -838,34 +609,30 @@ function animate() {
         scene,
         camera
     );
+
 }
 
 animate();
-
 
 // =====================================
 // REDIMENSIONNEMENT
 // =====================================
 
-window.addEventListener(
-    "resize",
-    function() {
+window.addEventListener("resize", () => {
 
-        camera.aspect =
-            window.innerWidth /
-            window.innerHeight;
+    camera.aspect =
+        window.innerWidth /
+        window.innerHeight;
 
-        camera.updateProjectionMatrix();
+    camera.updateProjectionMatrix();
 
-        renderer.setSize(
-            window.innerWidth,
-            window.innerHeight
-        );
+    renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+    );
 
-    }
-);
+});
 
 </script>
-
 </body>
 </html>
