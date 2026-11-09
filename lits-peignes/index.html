@@ -70,50 +70,51 @@
       pointer-events: none;
     }
 
-    /* ========================================
+    /* ==========================================
        INDICATION 3D - EN BAS À GAUCHE
-       ======================================== */
+       ========================================== */
 
     #hint {
       position: absolute;
-      bottom: 18px;
+      bottom: 14px;
       left: 18px;
       display: flex;
       align-items: flex-start;
-      gap: 9px;
-      padding: 10px 12px;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.88);
+      gap: 5px;
+      padding: 0;
+      background: transparent;
       color: #333333;
       pointer-events: none;
       z-index: 5;
     }
 
-    #hint svg {
-      width: 17px;
-      height: 17px;
+    .hint-icon {
+      font-family: Arial, sans-serif;
+      font-size: 15px;
+      font-weight: bold;
+      line-height: 13px;
+      color: #333333;
       flex-shrink: 0;
-      margin-top: 1px;
     }
 
     .hint-title {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
-      line-height: 1.4;
+      line-height: 1.3;
     }
 
     .hint-description {
       margin-top: 2px;
       color: #777777;
       font-size: 10px;
-      line-height: 1.4;
+      line-height: 1.3;
+      white-space: nowrap;
     }
 
     @media (max-width: 480px) {
       #hint {
         bottom: 12px;
         left: 12px;
-        padding: 8px 10px;
       }
     }
   </style>
@@ -138,22 +139,10 @@
 
     <div id="error"></div>
 
-    <!-- INDICATION 3D EN BAS À GAUCHE -->
+    <!-- INDICATION 3D -->
 
     <div id="hint">
-
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.7"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <rect x="5" y="2" width="14" height="20" rx="7"/>
-        <path d="M12 2v8"/>
-      </svg>
+      <span class="hint-icon">↻</span>
 
       <div>
         <div class="hint-title">
@@ -164,7 +153,6 @@
           Faites glisser pour faire pivoter
         </div>
       </div>
-
     </div>
 
   </div>
@@ -181,7 +169,7 @@
 
 
     // ==========================================
-    // CONFIGURATION
+    // CONFIGURATION PAR DÉFAUT
     // ==========================================
 
     const configuration = {
@@ -613,14 +601,11 @@
         );
 
       // ========================================
-      // ZOOM INITIAL AUGMENTÉ DE 20 %
+      // ZOOM INITIAL AUGMENTÉ
       // ========================================
 
       // Ancienne valeur : 1.8
       // Nouvelle valeur : 1.5
-      //
-      // Réduit la distance de caméra,
-      // ce qui agrandit les modèles.
 
       const distance =
         (dimension / 2) /
