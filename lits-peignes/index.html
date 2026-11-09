@@ -70,20 +70,51 @@
       pointer-events: none;
     }
 
+    /* ========================================
+       INDICATION 3D - EN BAS À GAUCHE
+       ======================================== */
+
     #hint {
       position: absolute;
-      bottom: 14px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 9px 14px;
+      bottom: 18px;
+      left: 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      padding: 10px 12px;
       border-radius: 8px;
       background: rgba(255, 255, 255, 0.88);
-      color: #555555;
-      font-size: 12px;
-      text-align: center;
-      white-space: nowrap;
+      color: #333333;
       pointer-events: none;
       z-index: 5;
+    }
+
+    #hint svg {
+      width: 17px;
+      height: 17px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .hint-title {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .hint-description {
+      margin-top: 2px;
+      color: #777777;
+      font-size: 10px;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 480px) {
+      #hint {
+        bottom: 12px;
+        left: 12px;
+        padding: 8px 10px;
+      }
     }
   </style>
 
@@ -100,15 +131,42 @@
 <body>
 
   <div id="viewer">
+
     <div id="loading">
       Chargement de votre aménagement 3D…
     </div>
 
     <div id="error"></div>
 
+    <!-- INDICATION 3D EN BAS À GAUCHE -->
+
     <div id="hint">
-      Faites glisser pour pivoter · Molette pour zoomer
+
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.7"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <rect x="5" y="2" width="14" height="20" rx="7"/>
+        <path d="M12 2v8"/>
+      </svg>
+
+      <div>
+        <div class="hint-title">
+          Vue 3D interactive
+        </div>
+
+        <div class="hint-description">
+          Faites glisser pour faire pivoter
+        </div>
+      </div>
+
     </div>
+
   </div>
 
   <script type="module">
@@ -305,15 +363,10 @@
 
     let chargementInitialTermine = false;
 
-    let chargementsInitiauxRestants = 3;
-
 
     // ==========================================
     // VERSION DES FICHIERS
     // ==========================================
-
-    // Modifier ce numéro après un nouvel export
-    // permet de contourner le cache des GLB.
 
     const VERSION_MODELES = "20261109-1";
 
@@ -408,9 +461,7 @@
 
                 if (!gltf.scene) {
                   reject(
-                    new Error(
-                      "Scène 3D absente"
-                    )
+                    new Error("Scène 3D absente")
                   );
                   return;
                 }
@@ -462,8 +513,7 @@
         const nouveau =
           original.clone(true);
 
-        // Ne modifie pas les coordonnées
-        // d'origine du fichier Rhino.
+        // Conserve les coordonnées Rhino.
 
         if (modules[type]) {
           scene.remove(modules[type]);
@@ -562,9 +612,19 @@
           fovHorizontal
         );
 
+      // ========================================
+      // ZOOM INITIAL AUGMENTÉ DE 20 %
+      // ========================================
+
+      // Ancienne valeur : 1.8
+      // Nouvelle valeur : 1.5
+      //
+      // Réduit la distance de caméra,
+      // ce qui agrandit les modèles.
+
       const distance =
         (dimension / 2) /
-        Math.tan(fovLimite / 2) * 1.8;
+        Math.tan(fovLimite / 2) * 1.5;
 
       camera.position.set(
         centre.x + distance * 0.75,
@@ -677,6 +737,7 @@
         let changerCuisine = false;
 
         // Lit peigne
+
         if (
           data.lit &&
           fichiers.lits[data.lit] &&
@@ -689,6 +750,7 @@
         }
 
         // Rangement
+
         if (
           data.rangement &&
           fichiers.rangements[data.rangement] &&
@@ -701,6 +763,7 @@
         }
 
         // Cuisine
+
         if (
           data.cuisine &&
           fichiers.cuisines[data.cuisine] &&
@@ -712,7 +775,8 @@
 
         }
 
-        // Mode jour / nuit
+        // Mode Jour / Nuit
+
         if (
           (
             data.mode === "jour" ||
@@ -754,9 +818,6 @@
         "Initialisation visualiseur ASSYNT"
       );
 
-      // Lance les trois chargements
-      // indépendamment.
-
       const resultats =
         await Promise.allSettled([
           actualiserLit(),
@@ -771,14 +832,10 @@
 
       chargementInitialTermine = true;
 
-      // Cadre uniquement après le
-      // chargement des trois modules.
-
       cadrerCamera();
 
       loading.classList.add("hidden");
 
-      // Informe Wix que la 3D est prête.
       window.parent.postMessage(
         {
           type: "litsPeignesReady"
