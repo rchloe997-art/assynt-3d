@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Configurateur ASSYNT T5/T6 L2</title>
+<title>Configurateur ASSYNT L2</title>
 
 <style>
 * {
@@ -448,11 +449,11 @@ boutonNuit.addEventListener(
 );
 
 // =====================================
-// BANQUETTE - MODE JOUR
+// BANQUETTE L2 - MODE JOUR
 // =====================================
 
 loader.load(
-    "Configuration%20T5.T6%20L1%20-%20Assynt.glb",
+    "Configuration%20T5.T6%20L2%20-%20Assynt.glb",
 
     function(gltf) {
 
@@ -474,7 +475,7 @@ loader.load(
     function(error) {
 
         console.error(
-            "Erreur banquette jour :",
+            "Erreur banquette L2 jour :",
             error
         );
 
@@ -484,11 +485,11 @@ loader.load(
 );
 
 // =====================================
-// BANQUETTE - MODE NUIT
+// BANQUETTE L2 - MODE NUIT
 // =====================================
 
 loader.load(
-    "lit_nuit.glb",
+    "mode%20nuit.glb",
 
     function(gltf) {
 
@@ -508,7 +509,7 @@ loader.load(
     function(error) {
 
         console.error(
-            "Erreur banquette nuit :",
+            "Erreur banquette L2 nuit :",
             error
         );
 
@@ -557,7 +558,7 @@ function loadKitchen(key, file) {
 }
 
 // =====================================
-// FICHIERS GLB
+// FICHIERS GLB DES CUISINES
 // =====================================
 
 // BEAG ADHAIR
