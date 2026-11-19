@@ -1,1 +1,902 @@
 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>ASSYNT – Mercedes Vito L – Configurateur lits peignes</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #ffffff;
+      font-family: Arial, sans-serif;
+    }
+
+    #viewer {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 300px;
+      background: #ffffff;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.85);
+      color: #555555;
+      font-size: 13px;
+      text-align: center;
+      padding: 20px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    #loading.hidden {
+      display: none;
+    }
+
+    #error {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      display: none;
+      padding: 12px;
+      border-radius: 6px;
+      background: #fff1f0;
+      color: #9d2525;
+      font-size: 12px;
+      line-height: 1.5;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    /* ==========================================
+       INDICATION 3D - EN BAS À GAUCHE
+       ========================================== */
+
+    #hint {
+      position: absolute;
+      bottom: 14px;
+      left: 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 5px;
+      padding: 0;
+      background: transparent;
+      color: #333333;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .hint-icon {
+      font-family: Arial, sans-serif;
+      font-size: 15px;
+      font-weight: bold;
+      line-height: 13px;
+      color: #333333;
+      flex-shrink: 0;
+    }
+
+    .hint-title {
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .hint-description {
+      margin-top: 2px;
+      color: #777777;
+      font-size: 10px;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 480px) {
+      #hint {
+        bottom: 12px;
+        left: 12px;
+      }
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+
+<body>
+
+  <div id="viewer">
+
+    <div id="loading">
+      Chargement de votre aménagement 3D…
+    </div>
+
+    <div id="error"></div>
+
+    <!-- INDICATION 3D -->
+
+    <div id="hint">
+      <span class="hint-icon">↻</span>
+
+      <div>
+        <div class="hint-title">
+          Vue 3D interactive
+        </div>
+
+        <div class="hint-description">
+          Faites glisser pour faire pivoter
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+
+    import * as THREE from "three";
+
+    import { OrbitControls } from
+      "three/addons/controls/OrbitControls.js";
+
+    import { GLTFLoader } from
+      "three/addons/loaders/GLTFLoader.js";
+
+
+    // ==========================================
+    // CONFIGURATION PAR DÉFAUT
+    // MERCEDES VITO LONG
+    // ==========================================
+
+    const configuration = {
+      lit: "torridon",
+      rangement: "sorcha",
+      cuisine: "beagAdhair",
+      mode: "jour"
+    };
+
+
+    // ==========================================
+    // FICHIERS GLB - MERCEDES VITO L
+    // ==========================================
+
+    const fichiers = {
+
+      lits: {
+        torridon: {
+          jour: "Torridon_jour.glb",
+          nuit: "Torridon_nuit.glb"
+        },
+
+        schiehallion: {
+          jour: "Schiehallion_jour.glb",
+          nuit: "Schiehallion_nuit.glb"
+        }
+      },
+
+      rangements: {
+        sorcha: {
+          jour: "Sorcha_jour.glb",
+          nuit: "Sorcha_nuit.glb"
+        },
+
+        clachan: {
+          jour: "Clachan_jour.glb",
+          nuit: "Clachan_nuit.glb"
+        }
+      },
+
+      cuisines: {
+        beag: "Beag.glb",
+        beagAdhair: "Beag_Adhair.glb",
+        corbett: "Corbett.glb",
+        biadh: "Biadh.glb",
+        outdoor: "Outdoor.glb"
+      }
+
+    };
+
+
+    // ==========================================
+    // ÉLÉMENTS HTML
+    // ==========================================
+
+    const container =
+      document.getElementById("viewer");
+
+    const loading =
+      document.getElementById("loading");
+
+    const errorBox =
+      document.getElementById("error");
+
+
+    // ==========================================
+    // SCÈNE 3D
+    // ==========================================
+
+    const scene = new THREE.Scene();
+
+    scene.background =
+      new THREE.Color(0xffffff);
+
+    const camera = new THREE.PerspectiveCamera(
+      35,
+      1,
+      0.01,
+      100000
+    );
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false
+    });
+
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio || 1, 2)
+    );
+
+    renderer.outputColorSpace =
+      THREE.SRGBColorSpace;
+
+    container.appendChild(renderer.domElement);
+
+
+    // ==========================================
+    // ÉCLAIRAGE
+    // ==========================================
+
+    const hemisphere =
+      new THREE.HemisphereLight(
+        0xffffff,
+        0xdedede,
+        2.5
+      );
+
+    scene.add(hemisphere);
+
+    const lumiere1 =
+      new THREE.DirectionalLight(
+        0xffffff,
+        2.0
+      );
+
+    lumiere1.position.set(5, 8, 7);
+    scene.add(lumiere1);
+
+    const lumiere2 =
+      new THREE.DirectionalLight(
+        0xffffff,
+        1.0
+      );
+
+    lumiere2.position.set(-5, 4, -6);
+    scene.add(lumiere2);
+
+
+    // ==========================================
+    // CONTRÔLES CAMÉRA
+    // ==========================================
+
+    const controls = new OrbitControls(
+      camera,
+      renderer.domElement
+    );
+
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+
+    controls.enablePan = false;
+
+    controls.minDistance = 0.1;
+    controls.maxDistance = 100000;
+
+    camera.position.set(4, 3, 5);
+
+    controls.target.set(0, 0, 0);
+    controls.update();
+
+
+    // ==========================================
+    // GESTION DES MODÈLES
+    // ==========================================
+
+    const loader = new GLTFLoader();
+
+    const cache = new Map();
+
+    const modules = {
+      lit: null,
+      rangement: null,
+      cuisine: null
+    };
+
+    const requetes = {
+      lit: 0,
+      rangement: 0,
+      cuisine: 0
+    };
+
+    const erreurs = {
+      lit: null,
+      rangement: null,
+      cuisine: null
+    };
+
+    let cameraInitialisee = false;
+
+    let chargementInitialTermine = false;
+
+
+    // ==========================================
+    // VERSION DES FICHIERS
+    // ==========================================
+
+    const VERSION_MODELES = "20261119-1";
+
+
+    // ==========================================
+    // AFFICHAGE DES ERREURS
+    // ==========================================
+
+    function afficherErreurs() {
+
+      const messages =
+        Object.values(erreurs).filter(Boolean);
+
+      if (messages.length === 0) {
+        errorBox.style.display = "none";
+        errorBox.textContent = "";
+        return;
+      }
+
+      errorBox.textContent =
+        "Certains modèles n'ont pas pu être chargés : " +
+        messages.join(" | ");
+
+      errorBox.style.display = "block";
+    }
+
+
+    // ==========================================
+    // STYLE DES MODÈLES
+    // ==========================================
+
+    function appliquerStyle(objet) {
+
+      objet.traverse(child => {
+
+        if (!child.isMesh) return;
+
+        child.material =
+          new THREE.MeshStandardMaterial({
+            color: 0xf2f2f0,
+            roughness: 0.85,
+            metalness: 0,
+            side: THREE.DoubleSide
+          });
+
+        const edges =
+          new THREE.EdgesGeometry(
+            child.geometry,
+            25
+          );
+
+        const lignes =
+          new THREE.LineSegments(
+            edges,
+            new THREE.LineBasicMaterial({
+              color: 0x303030,
+              transparent: true,
+              opacity: 0.75
+            })
+          );
+
+        child.add(lignes);
+
+      });
+
+    }
+
+
+    // ==========================================
+    // CHARGEMENT D'UN FICHIER GLB
+    // ==========================================
+
+    function chargerFichier(nomFichier) {
+
+      if (!cache.has(nomFichier)) {
+
+        const url =
+          new URL(nomFichier, window.location.href);
+
+        url.searchParams.set(
+          "v",
+          VERSION_MODELES
+        );
+
+        const promesse = new Promise(
+          (resolve, reject) => {
+
+            loader.load(
+              url.href,
+
+              gltf => {
+
+                if (!gltf.scene) {
+                  reject(
+                    new Error("Scène 3D absente")
+                  );
+                  return;
+                }
+
+                appliquerStyle(gltf.scene);
+
+                resolve(gltf.scene);
+
+              },
+
+              undefined,
+
+              erreur => {
+                reject(erreur);
+              }
+            );
+
+          }
+        );
+
+        cache.set(nomFichier, promesse);
+      }
+
+      return cache.get(nomFichier);
+    }
+
+
+    // ==========================================
+    // CHANGER UN MODULE
+    // ==========================================
+
+    async function changerModule(type, nomFichier) {
+
+      const numero =
+        ++requetes[type];
+
+      erreurs[type] = null;
+      afficherErreurs();
+
+      try {
+
+        const original =
+          await chargerFichier(nomFichier);
+
+        if (numero !== requetes[type]) {
+          return;
+        }
+
+        const nouveau =
+          original.clone(true);
+
+        // Conserve les coordonnées Rhino.
+
+        if (modules[type]) {
+          scene.remove(modules[type]);
+        }
+
+        modules[type] = nouveau;
+
+        scene.add(nouveau);
+
+        erreurs[type] = null;
+        afficherErreurs();
+
+        if (
+          chargementInitialTermine &&
+          !cameraInitialisee
+        ) {
+          cadrerCamera();
+        }
+
+        console.log(
+          "Modèle chargé :",
+          type,
+          nomFichier
+        );
+
+      } catch (erreur) {
+
+        if (numero !== requetes[type]) {
+          return;
+        }
+
+        console.error(
+          "Erreur de chargement :",
+          nomFichier,
+          erreur
+        );
+
+        erreurs[type] = nomFichier;
+
+        afficherErreurs();
+
+      }
+    }
+
+
+    // ==========================================
+    // CADRAGE DE LA CAMÉRA
+    // ==========================================
+
+    function cadrerCamera() {
+
+      const box = new THREE.Box3();
+
+      Object.values(modules).forEach(
+        module => {
+
+          if (module) {
+            box.expandByObject(module);
+          }
+
+        }
+      );
+
+      if (box.isEmpty()) return;
+
+      const centre =
+        box.getCenter(new THREE.Vector3());
+
+      const taille =
+        box.getSize(new THREE.Vector3());
+
+      const dimension =
+        Math.max(
+          taille.x,
+          taille.y,
+          taille.z,
+          0.001
+        );
+
+      const aspect =
+        Math.max(camera.aspect, 0.1);
+
+      const fovVertical =
+        THREE.MathUtils.degToRad(
+          camera.fov
+        );
+
+      const fovHorizontal =
+        2 * Math.atan(
+          Math.tan(fovVertical / 2) * aspect
+        );
+
+      const fovLimite =
+        Math.min(
+          fovVertical,
+          fovHorizontal
+        );
+
+
+      // ========================================
+      // ZOOM INITIAL
+      // ========================================
+
+      const distance =
+        (dimension / 2) /
+        Math.tan(fovLimite / 2) * 1.0;
+
+      camera.position.set(
+        centre.x + distance * 0.75,
+        centre.y + distance * 0.50,
+        centre.z + distance * 0.75
+      );
+
+      camera.near =
+        Math.max(dimension / 1000, 0.001);
+
+      camera.far =
+        Math.max(dimension * 100, distance * 20);
+
+      camera.updateProjectionMatrix();
+
+      controls.target.copy(centre);
+
+      controls.minDistance =
+        Math.max(dimension * 0.1, 0.01);
+
+      controls.maxDistance =
+        Math.max(dimension * 20, distance * 5);
+
+      controls.update();
+
+      cameraInitialisee = true;
+    }
+
+
+    // ==========================================
+    // SÉLECTION DES FICHIERS
+    // ==========================================
+
+    function fichierLit() {
+
+      return fichiers.lits[
+        configuration.lit
+      ][configuration.mode];
+
+    }
+
+    function fichierRangement() {
+
+      return fichiers.rangements[
+        configuration.rangement
+      ][configuration.mode];
+
+    }
+
+    function fichierCuisine() {
+
+      return fichiers.cuisines[
+        configuration.cuisine
+      ];
+
+    }
+
+
+    // ==========================================
+    // ACTUALISATION DES MODULES
+    // ==========================================
+
+    function actualiserLit() {
+
+      return changerModule(
+        "lit",
+        fichierLit()
+      );
+
+    }
+
+    function actualiserRangement() {
+
+      return changerModule(
+        "rangement",
+        fichierRangement()
+      );
+
+    }
+
+    function actualiserCuisine() {
+
+      return changerModule(
+        "cuisine",
+        fichierCuisine()
+      );
+
+    }
+
+
+    // ==========================================
+    // COMMUNICATION AVEC WIX
+    // ==========================================
+
+    window.addEventListener(
+      "message",
+      event => {
+
+        const data = event.data;
+
+        if (
+          !data ||
+          typeof data !== "object"
+        ) {
+          return;
+        }
+
+        let changerLit = false;
+        let changerRangement = false;
+        let changerCuisine = false;
+
+
+        // Lit peigne
+
+        if (
+          data.lit &&
+          fichiers.lits[data.lit] &&
+          data.lit !== configuration.lit
+        ) {
+
+          configuration.lit = data.lit;
+          changerLit = true;
+
+        }
+
+
+        // Rangement
+
+        if (
+          data.rangement &&
+          fichiers.rangements[data.rangement] &&
+          data.rangement !== configuration.rangement
+        ) {
+
+          configuration.rangement = data.rangement;
+          changerRangement = true;
+
+        }
+
+
+        // Cuisine
+
+        if (
+          data.cuisine &&
+          fichiers.cuisines[data.cuisine] &&
+          data.cuisine !== configuration.cuisine
+        ) {
+
+          configuration.cuisine = data.cuisine;
+          changerCuisine = true;
+
+        }
+
+
+        // Mode Jour / Nuit
+
+        if (
+          (
+            data.mode === "jour" ||
+            data.mode === "nuit"
+          ) &&
+          data.mode !== configuration.mode
+        ) {
+
+          configuration.mode = data.mode;
+
+          changerLit = true;
+          changerRangement = true;
+
+        }
+
+
+        if (changerLit) {
+          actualiserLit();
+        }
+
+        if (changerRangement) {
+          actualiserRangement();
+        }
+
+        if (changerCuisine) {
+          actualiserCuisine();
+        }
+
+      }
+    );
+
+
+    // ==========================================
+    // INITIALISATION
+    // ==========================================
+
+    async function initialiser() {
+
+      console.log(
+        "Initialisation visualiseur ASSYNT - Mercedes Vito L"
+      );
+
+      const resultats =
+        await Promise.allSettled([
+          actualiserLit(),
+          actualiserRangement(),
+          actualiserCuisine()
+        ]);
+
+      console.log(
+        "Chargement initial terminé",
+        resultats
+      );
+
+      chargementInitialTermine = true;
+
+      cadrerCamera();
+
+      loading.classList.add("hidden");
+
+      window.parent.postMessage(
+        {
+          type: "litsPeignesReady"
+        },
+        "*"
+      );
+
+    }
+
+
+    // ==========================================
+    // REDIMENSIONNEMENT
+    // ==========================================
+
+    function redimensionner() {
+
+      const largeur =
+        container.clientWidth;
+
+      const hauteur =
+        container.clientHeight;
+
+      if (!largeur || !hauteur) return;
+
+      camera.aspect =
+        largeur / hauteur;
+
+      camera.updateProjectionMatrix();
+
+      renderer.setSize(
+        largeur,
+        hauteur
+      );
+
+    }
+
+    const observer =
+      new ResizeObserver(
+        redimensionner
+      );
+
+    observer.observe(container);
+
+    redimensionner();
+
+
+    // ==========================================
+    // ANIMATION
+    // ==========================================
+
+    function animer() {
+
+      requestAnimationFrame(animer);
+
+      controls.update();
+
+      renderer.render(scene, camera);
+
+    }
+
+    animer();
+
+
+    // ==========================================
+    // DÉMARRAGE
+    // ==========================================
+
+    initialiser();
+
+  </script>
+
+</body>
+</html>
+
