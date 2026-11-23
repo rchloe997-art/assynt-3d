@@ -1,1 +1,782 @@
 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Configurateur CUILLIN – Mercedes Vito XL</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #ffffff;
+    font-family: Arial, sans-serif;
+}
+
+#viewer {
+    position: absolute;
+    inset: 0;
+}
+
+#indication3D {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 20;
+    background: rgba(255,255,255,0.92);
+    padding: 12px 16px;
+    border-radius: 10px;
+    color: #333333;
+    font-size: 13px;
+    line-height: 1.6;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+#status {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    font-size: 12px;
+    color: #777777;
+    text-align: center;
+    width: 90%;
+    pointer-events: none;
+}
+</style>
+
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+    }
+}
+</script>
+</head>
+
+<body>
+
+<div id="viewer"></div>
+
+<div id="indication3D">
+    <div style="font-weight:600;">
+        ↻ Vue 3D interactive
+    </div>
+    <div style="font-size:12px;color:#777777;">
+        Faites glisser pour faire pivoter
+    </div>
+</div>
+
+<div id="status">Chargement du modèle 3D...</div>
+
+<script type="module">
+
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+
+// =====================================
+// VERSION DES FICHIERS GLB
+// =====================================
+
+const VERSION_MODELES = "20261123-1";
+
+function fichierGLB(nomFichier) {
+
+    const url = new URL(
+        nomFichier,
+        window.location.href
+    );
+
+    url.searchParams.set(
+        "v",
+        VERSION_MODELES
+    );
+
+    return url.href;
+}
+
+
+// =====================================
+// SCÈNE
+// =====================================
+
+const scene = new THREE.Scene();
+
+scene.background = new THREE.Color(0xffffff);
+
+
+// =====================================
+// CAMÉRA
+// =====================================
+
+const camera = new THREE.PerspectiveCamera(
+    35,
+    window.innerWidth / window.innerHeight,
+    0.01,
+    10000
+);
+
+
+// =====================================
+// RENDU
+// =====================================
+
+const renderer = new THREE.WebGLRenderer({
+    antialias: true
+});
+
+renderer.setPixelRatio(
+    Math.min(window.devicePixelRatio, 2)
+);
+
+renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+);
+
+document.getElementById("viewer")
+    .appendChild(renderer.domElement);
+
+
+// =====================================
+// LUMIÈRES
+// =====================================
+
+scene.add(
+    new THREE.HemisphereLight(
+        0xffffff,
+        0xffffff,
+        3
+    )
+);
+
+const light = new THREE.DirectionalLight(
+    0xffffff,
+    3
+);
+
+light.position.set(5, 10, 7);
+
+scene.add(light);
+
+
+// =====================================
+// CONTRÔLES 3D
+// =====================================
+
+const controls = new OrbitControls(
+    camera,
+    renderer.domElement
+);
+
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+
+controls.enableZoom = true;
+controls.enableRotate = true;
+controls.enablePan = true;
+
+
+// =====================================
+// INDICATION 3D
+// =====================================
+
+const indication3D =
+    document.getElementById("indication3D");
+
+let minuterieIndication;
+
+controls.addEventListener("start", () => {
+
+    clearTimeout(minuterieIndication);
+
+    indication3D.style.opacity = "0";
+
+});
+
+controls.addEventListener("end", () => {
+
+    clearTimeout(minuterieIndication);
+
+    minuterieIndication = setTimeout(() => {
+
+        indication3D.style.opacity = "1";
+
+    }, 3000);
+
+});
+
+
+// =====================================
+// STYLE DESSIN TECHNIQUE
+// =====================================
+
+const drawingMaterial =
+    new THREE.MeshStandardMaterial({
+
+        color: 0xf2f2f0,
+        roughness: 0.9,
+        metalness: 0
+
+    });
+
+const edgeMaterial =
+    new THREE.LineBasicMaterial({
+
+        color: 0x303030
+
+    });
+
+
+function applyDrawingStyle(model) {
+
+    model.traverse(child => {
+
+        if (!child.isMesh) return;
+
+        child.material = drawingMaterial;
+
+        const edges = new THREE.EdgesGeometry(
+            child.geometry,
+            25
+        );
+
+        const lines = new THREE.LineSegments(
+            edges,
+            edgeMaterial
+        );
+
+        child.add(lines);
+
+    });
+
+}
+
+
+// =====================================
+// FICHIERS CUILLIN
+// MERCEDES VITO EXTRA-LONG
+// =====================================
+
+const cuillinFiles = {
+
+    explorer: {
+
+        assise: "Cuillin_explorer_assise.glb",
+
+        detente: "Cuillin_explorer_detente.glb",
+
+        couchage: "Cuillin_explorer_couchage.glb"
+
+    },
+
+    adventurer: {
+
+        assise: "Cuillin_adventurer_assise.glb",
+
+        detente: "Cuillin_adventurer_detente.glb",
+
+        couchage: "Cuillin_adventurer_couchage.glb"
+
+    },
+
+    basecamp: {
+
+        assise: "Cuillin_basecamp_assise.glb",
+
+        detente: "Cuillin_basecamp_detente.glb",
+
+        couchage: "Cuillin_basecamp_couchage.glb"
+
+    },
+
+    expedition: {
+
+        assise: "Cuillin_expedition_assise.glb",
+
+        detente: "Cuillin_expedition_detente.glb",
+
+        couchage: "Cuillin_expedition_couchage.glb"
+
+    }
+
+};
+
+
+// =====================================
+// FICHIERS CUISINES
+// MERCEDES VITO EXTRA-LONG
+// =====================================
+
+const kitchenFiles = {
+
+    beag: "Beag.glb",
+
+    beagAdhair: "Beag_Adhair.glb"
+
+};
+
+
+// =====================================
+// CONFIGURATION PAR DÉFAUT
+// =====================================
+
+let selectedVersion = "explorer";
+
+let selectedPosition = "couchage";
+
+let selectedKitchen = "beagAdhair";
+
+
+// =====================================
+// CHARGEMENT DES MODÈLES
+// =====================================
+
+const loader = new GLTFLoader();
+
+const status =
+    document.getElementById("status");
+
+const bedCache = new Map();
+
+const kitchenCache = new Map();
+
+const pendingLoads = new Map();
+
+let activeBed = null;
+
+let activeKitchen = null;
+
+let cameraInitialized = false;
+
+let bedRequest = 0;
+
+let kitchenRequest = 0;
+
+
+// =====================================
+// CHARGER UN FICHIER GLB
+// =====================================
+
+function loadModel(filename) {
+
+    if (pendingLoads.has(filename)) {
+
+        return pendingLoads.get(filename);
+
+    }
+
+    const promise = new Promise((resolve, reject) => {
+
+        loader.load(
+
+            fichierGLB(filename),
+
+            gltf => {
+
+                const model = gltf.scene;
+
+                applyDrawingStyle(model);
+
+                model.visible = false;
+
+                scene.add(model);
+
+                resolve(model);
+
+            },
+
+            undefined,
+
+            error => {
+
+                console.error(
+                    "Erreur de chargement :",
+                    filename,
+                    error
+                );
+
+                reject(error);
+
+            }
+
+        );
+
+    });
+
+    pendingLoads.set(filename, promise);
+
+    promise.then(
+
+        () => pendingLoads.delete(filename),
+
+        () => pendingLoads.delete(filename)
+
+    );
+
+    return promise;
+
+}
+
+
+// =====================================
+// CADRAGE DE LA CAMÉRA
+// =====================================
+
+function frameCamera(model) {
+
+    const box = new THREE.Box3()
+        .setFromObject(model);
+
+    if (box.isEmpty()) return;
+
+    const size = box.getSize(
+        new THREE.Vector3()
+    );
+
+    const center = box.getCenter(
+        new THREE.Vector3()
+    );
+
+    const maxDim = Math.max(
+        size.x,
+        size.y,
+        size.z
+    );
+
+    if (maxDim <= 0) return;
+
+    camera.position.set(
+
+        center.x + maxDim * 1.45,
+
+        center.y + maxDim * 0.90,
+
+        center.z + maxDim * 1.45
+
+    );
+
+    controls.target.copy(center);
+
+    camera.near = Math.max(
+        maxDim / 100,
+        0.001
+    );
+
+    camera.far = maxDim * 100;
+
+    camera.updateProjectionMatrix();
+
+    controls.update();
+
+}
+
+
+// =====================================
+// CHANGEMENT DE VERSION / POSITION
+// =====================================
+
+async function updateBed() {
+
+    const request = ++bedRequest;
+
+    const version = selectedVersion;
+
+    const position = selectedPosition;
+
+    const filename =
+        cuillinFiles[version][position];
+
+    status.textContent =
+        "Chargement du CUILLIN...";
+
+    try {
+
+        let model = bedCache.get(filename);
+
+        if (!model) {
+
+            model = await loadModel(filename);
+
+            bedCache.set(filename, model);
+
+        }
+
+        if (request !== bedRequest) return;
+
+        if (activeBed) {
+
+            activeBed.visible = false;
+
+        }
+
+        activeBed = model;
+
+        activeBed.visible = true;
+
+        if (!cameraInitialized) {
+
+            frameCamera(model);
+
+            cameraInitialized = true;
+
+        }
+
+        status.textContent = "";
+
+    } catch (error) {
+
+        if (request !== bedRequest) return;
+
+        console.error(error);
+
+        status.textContent =
+            "Impossible de charger le CUILLIN.";
+
+    }
+
+}
+
+
+// =====================================
+// CHANGEMENT DE CUISINE
+// =====================================
+
+async function updateKitchen() {
+
+    const request = ++kitchenRequest;
+
+    const kitchen = selectedKitchen;
+
+    if (kitchen === "aucune") {
+
+        if (activeKitchen) {
+
+            activeKitchen.visible = false;
+
+        }
+
+        activeKitchen = null;
+
+        return;
+
+    }
+
+    const filename = kitchenFiles[kitchen];
+
+    try {
+
+        let model = kitchenCache.get(filename);
+
+        if (!model) {
+
+            model = await loadModel(filename);
+
+            kitchenCache.set(filename, model);
+
+        }
+
+        if (request !== kitchenRequest) return;
+
+        if (activeKitchen) {
+
+            activeKitchen.visible = false;
+
+        }
+
+        activeKitchen = model;
+
+        activeKitchen.visible = true;
+
+    } catch (error) {
+
+        if (request !== kitchenRequest) return;
+
+        console.error(error);
+
+        status.textContent =
+            "Impossible de charger la cuisine.";
+
+    }
+
+}
+
+
+// =====================================
+// COMMUNICATION AVEC WIX
+// =====================================
+
+window.addEventListener("message", event => {
+
+    const data = event.data;
+
+    if (!data || typeof data !== "object") {
+
+        return;
+
+    }
+
+    let bedChanged = false;
+
+
+    // VERSION DU CUILLIN
+
+    if (
+
+        typeof data.version === "string" &&
+
+        Object.prototype.hasOwnProperty.call(
+
+            cuillinFiles,
+
+            data.version
+
+        )
+
+    ) {
+
+        if (selectedVersion !== data.version) {
+
+            selectedVersion = data.version;
+
+            bedChanged = true;
+
+        }
+
+    }
+
+
+    // POSITION DU CUILLIN
+
+    if (
+
+        typeof data.position === "string" &&
+
+        ["assise", "detente", "couchage"]
+            .includes(data.position)
+
+    ) {
+
+        if (selectedPosition !== data.position) {
+
+            selectedPosition = data.position;
+
+            bedChanged = true;
+
+        }
+
+    }
+
+
+    // CUISINE
+
+    if (
+
+        data.cuisine === "aucune" ||
+
+        Object.prototype.hasOwnProperty.call(
+
+            kitchenFiles,
+
+            data.cuisine
+
+        )
+
+    ) {
+
+        if (selectedKitchen !== data.cuisine) {
+
+            selectedKitchen = data.cuisine;
+
+            updateKitchen();
+
+        }
+
+    }
+
+
+    // MISE À JOUR DU LIT
+
+    if (bedChanged) {
+
+        updateBed();
+
+    }
+
+});
+
+
+// =====================================
+// INITIALISATION
+// =====================================
+
+updateBed();
+
+updateKitchen();
+
+
+// =====================================
+// ANIMATION
+// =====================================
+
+function animate() {
+
+    requestAnimationFrame(animate);
+
+    controls.update();
+
+    renderer.render(
+
+        scene,
+
+        camera
+
+    );
+
+}
+
+animate();
+
+
+// =====================================
+// REDIMENSIONNEMENT
+// =====================================
+
+window.addEventListener("resize", () => {
+
+    camera.aspect =
+
+        window.innerWidth /
+
+        window.innerHeight;
+
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(
+
+        window.innerWidth,
+
+        window.innerHeight
+
+    );
+
+});
+
+</script>
+
+</body>
+</html>
+
