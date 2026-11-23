@@ -4,8 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>ASSYNT – Mercedes Vito XL – Lit banquette</title>
+<title>ASSYNT – Mercedes Vito XL – Banquette</title>
 
 <style>
 * {
@@ -32,13 +31,12 @@ html, body {
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
-    display: none;
+    display: flex;
     gap: 4px;
     padding: 4px;
     background: #f5f5f5;
     border: 1px solid #e5e5e5;
     border-radius: 9px;
-    white-space: nowrap;
 }
 
 .modeButton {
@@ -48,14 +46,12 @@ html, body {
     padding: 10px 22px;
     border-radius: 6px;
     font-size: 13px;
-    font-family: Arial, sans-serif;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s;
 }
 
 .modeButton.active {
     background: #252525;
-    color: white;
+    color: #ffffff;
 }
 
 .modeButton:disabled {
@@ -65,7 +61,7 @@ html, body {
 
 #status {
     position: absolute;
-    bottom: 75px;
+    bottom: 80px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
@@ -84,11 +80,11 @@ html, body {
     background: rgba(255,255,255,0.92);
     padding: 12px 16px;
     border-radius: 10px;
-    color: #333333;
+    color: #333;
     font-size: 13px;
     line-height: 1.6;
     pointer-events: none;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s;
 }
 </style>
 </head>
@@ -96,10 +92,10 @@ html, body {
 <body>
 
 <div id="indication3D">
-    <div style="font-weight:600;">
+    <div style="font-weight:600">
         ↻ Vue 3D interactive
     </div>
-    <div style="font-size:12px;color:#777777;">
+    <div style="font-size:12px;color:#777">
         Faites glisser pour faire pivoter
     </div>
 </div>
@@ -107,31 +103,15 @@ html, body {
 <div id="viewer"></div>
 
 <div id="modeSelector">
-
-    <button
-        id="modeJour"
-        class="modeButton active"
-        type="button"
-        aria-pressed="true"
-    >
+    <button id="modeJour" class="modeButton active">
         Jour
     </button>
-
-    <button
-        id="modeNuit"
-        class="modeButton"
-        type="button"
-        aria-pressed="false"
-        disabled
-    >
+    <button id="modeNuit" class="modeButton" disabled>
         Nuit
     </button>
-
 </div>
 
-<div id="status">
-    Chargement du modèle 3D...
-</div>
+<div id="status">Chargement du modèle 3D...</div>
 
 <script type="importmap">
 {
@@ -145,27 +125,19 @@ html, body {
 <script type="module">
 
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-import { GLTFLoader } from
-    "three/addons/loaders/GLTFLoader.js";
-
-import { OrbitControls } from
-    "three/addons/controls/OrbitControls.js";
-
-
-// =====================================
+// ==========================================
 // SCÈNE
-// =====================================
+// ==========================================
 
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xffffff);
 
-scene.background =
-    new THREE.Color(0xffffff);
-
-
-// =====================================
+// ==========================================
 // CAMÉRA
-// =====================================
+// ==========================================
 
 const camera = new THREE.PerspectiveCamera(
     35,
@@ -174,10 +146,9 @@ const camera = new THREE.PerspectiveCamera(
     10000
 );
 
-
-// =====================================
+// ==========================================
 // RENDU
-// =====================================
+// ==========================================
 
 const renderer = new THREE.WebGLRenderer({
     antialias: true
@@ -192,14 +163,12 @@ renderer.setSize(
     window.innerHeight
 );
 
-document
-    .getElementById("viewer")
+document.getElementById("viewer")
     .appendChild(renderer.domElement);
 
-
-// =====================================
-// LUMIÈRES
-// =====================================
+// ==========================================
+// ÉCLAIRAGE
+// ==========================================
 
 scene.add(
     new THREE.HemisphereLight(
@@ -215,13 +184,11 @@ const light = new THREE.DirectionalLight(
 );
 
 light.position.set(5, 10, 7);
-
 scene.add(light);
 
-
-// =====================================
+// ==========================================
 // CONTRÔLES
-// =====================================
+// ==========================================
 
 const controls = new OrbitControls(
     camera,
@@ -230,15 +197,13 @@ const controls = new OrbitControls(
 
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
-
 controls.enableZoom = true;
 controls.enableRotate = true;
 controls.enablePan = true;
 
-
-// =====================================
+// ==========================================
 // INDICATION 3D
-// =====================================
+// ==========================================
 
 const indication3D =
     document.getElementById("indication3D");
@@ -246,116 +211,38 @@ const indication3D =
 let minuterieIndication;
 
 function masquerIndication3D() {
-
     clearTimeout(minuterieIndication);
-
-    if (indication3D) {
-        indication3D.style.opacity = "0";
-    }
+    indication3D.style.opacity = "0";
 }
 
 function afficherIndication3D() {
-
     clearTimeout(minuterieIndication);
 
     minuterieIndication = setTimeout(() => {
-
-        if (indication3D) {
-            indication3D.style.display = "block";
-            indication3D.style.opacity = "1";
-        }
-
+        indication3D.style.opacity = "1";
     }, 3000);
 }
 
-controls.addEventListener(
-    "start",
-    masquerIndication3D
-);
+controls.addEventListener("start", masquerIndication3D);
+controls.addEventListener("end", afficherIndication3D);
 
-controls.addEventListener(
-    "end",
-    afficherIndication3D
-);
-
-
-// =====================================
-// STYLE MONOCHROME
-// =====================================
-
-const drawingMaterial =
-    new THREE.MeshStandardMaterial({
-        color: 0xf2f2f0,
-        roughness: 0.9,
-        metalness: 0,
-        side: THREE.DoubleSide
-    });
-
-const edgeMaterial =
-    new THREE.LineBasicMaterial({
-        color: 0x303030
-    });
-
-
-// =====================================
-// CHARGEMENT
-// =====================================
-
-const loader = new GLTFLoader();
-
-const status =
-    document.getElementById("status");
-
-let baseModel = null;
-let nightModel = null;
-
-let selectedMode = "jour";
-let selectedKitchen = "beagAdhair";
-
-
-// =====================================
-// CUISINES DISPONIBLES - VITO XL
-// =====================================
-
-const kitchens = {
-    beagAdhair: null,
-    beag: null,
-    corbett: null,
-    outdoor: null,
-    biadh500: null
-};
-
-
-// =====================================
-// VERSION DES FICHIERS GLB
-// =====================================
-
-const VERSION_MODELES = "20261123-xl-2";
-
-function fichierGLB(nomFichier) {
-
-    const url = new URL(
-        nomFichier,
-        window.location.href
-    );
-
-    url.searchParams.set(
-        "v",
-        VERSION_MODELES
-    );
-
-    return url.href;
-}
-
-
-// =====================================
+// ==========================================
 // STYLE DESSIN
-// =====================================
+// ==========================================
+
+const drawingMaterial = new THREE.MeshStandardMaterial({
+    color: 0xf2f2f0,
+    roughness: 0.9,
+    metalness: 0,
+    side: THREE.DoubleSide
+});
+
+const edgeMaterial = new THREE.LineBasicMaterial({
+    color: 0x303030
+});
 
 function applyDrawingStyle(model) {
-
-    model.traverse(function(child) {
-
+    model.traverse(child => {
         if (!child.isMesh) return;
 
         child.material = drawingMaterial;
@@ -374,16 +261,59 @@ function applyDrawingStyle(model) {
     });
 }
 
+// ==========================================
+// CHARGEMENT
+// ==========================================
 
-// =====================================
+const loader = new GLTFLoader();
+const status = document.getElementById("status");
+
+let baseModel = null;
+let nightModel = null;
+
+let selectedMode = "jour";
+let selectedKitchen = "beagAdhair";
+
+// ==========================================
+// CUISINES MERCEDES VITO XL
+// ==========================================
+
+const kitchens = {
+    beagAdhair: null,
+    beag: null,
+    corbett: null,
+    biadh500: null,
+    outdoor: null,
+    meadhan: null
+};
+
+// ==========================================
+// VERSION DES MODÈLES
+// ==========================================
+
+const VERSION_MODELES = "20261123-xl-3";
+
+function fichierGLB(nomFichier) {
+    const url = new URL(
+        nomFichier,
+        window.location.href
+    );
+
+    url.searchParams.set(
+        "v",
+        VERSION_MODELES
+    );
+
+    return url.href;
+}
+
+// ==========================================
 // CADRAGE CAMÉRA
-// MODÈLE RÉDUIT À L'AFFICHAGE
-// =====================================
+// TAILLE RÉDUITE
+// ==========================================
 
 function frameCamera(model) {
-
-    const box =
-        new THREE.Box3().setFromObject(model);
+    const box = new THREE.Box3().setFromObject(model);
 
     const size = box.getSize(
         new THREE.Vector3()
@@ -402,7 +332,6 @@ function frameCamera(model) {
     if (maxDim <= 0) return;
 
     // Caméra reculée de 50 %
-    // Anciennes valeurs : 0.9 / 0.55 / 0.9
 
     camera.position.set(
         center.x + maxDim * 1.35,
@@ -412,39 +341,27 @@ function frameCamera(model) {
 
     controls.target.copy(center);
 
-    camera.near = Math.max(
-        maxDim / 100,
-        0.001
-    );
-
+    camera.near = Math.max(maxDim / 100, 0.001);
     camera.far = maxDim * 100;
 
     camera.updateProjectionMatrix();
-
     controls.update();
 }
 
+// ==========================================
+// MODES JOUR / NUIT
+// ==========================================
 
-// =====================================
-// GESTION JOUR / NUIT
-// =====================================
-
-const boutonJour =
-    document.getElementById("modeJour");
-
-const boutonNuit =
-    document.getElementById("modeNuit");
+const boutonJour = document.getElementById("modeJour");
+const boutonNuit = document.getElementById("modeNuit");
 
 function updateBedMode() {
-
     if (baseModel) {
-        baseModel.visible =
-            selectedMode === "jour";
+        baseModel.visible = selectedMode === "jour";
     }
 
     if (nightModel) {
-        nightModel.visible =
-            selectedMode === "nuit";
+        nightModel.visible = selectedMode === "nuit";
     }
 
     boutonJour.classList.toggle(
@@ -456,57 +373,34 @@ function updateBedMode() {
         "active",
         selectedMode === "nuit"
     );
-
-    boutonJour.setAttribute(
-        "aria-pressed",
-        String(selectedMode === "jour")
-    );
-
-    boutonNuit.setAttribute(
-        "aria-pressed",
-        String(selectedMode === "nuit")
-    );
 }
 
-boutonJour.addEventListener(
-    "click",
-    function() {
+boutonJour.addEventListener("click", () => {
+    selectedMode = "jour";
+    updateBedMode();
+});
 
-        selectedMode = "jour";
-        updateBedMode();
-    }
-);
+boutonNuit.addEventListener("click", () => {
+    if (!nightModel) return;
 
-boutonNuit.addEventListener(
-    "click",
-    function() {
+    selectedMode = "nuit";
+    updateBedMode();
+});
 
-        if (!nightModel) return;
-
-        selectedMode = "nuit";
-        updateBedMode();
-    }
-);
-
-
-// =====================================
-// BANQUETTE ASSYNT - MODE JOUR
-// MERCEDES VITO XL
-// =====================================
+// ==========================================
+// BANQUETTE ASSYNT JOUR
+// ==========================================
 
 loader.load(
     fichierGLB("Assynt_jour.glb"),
 
-    function(gltf) {
-
+    gltf => {
         baseModel = gltf.scene;
 
         applyDrawingStyle(baseModel);
-
         scene.add(baseModel);
 
         updateBedMode();
-
         frameCamera(baseModel);
 
         status.textContent = "";
@@ -514,33 +408,24 @@ loader.load(
 
     undefined,
 
-    function(error) {
-
-        console.error(
-            "Erreur banquette Vito XL jour :",
-            error
-        );
-
+    error => {
+        console.error("Erreur banquette jour :", error);
         status.textContent =
             "Erreur de chargement de la banquette.";
     }
 );
 
-
-// =====================================
-// BANQUETTE ASSYNT - MODE NUIT
-// MERCEDES VITO XL
-// =====================================
+// ==========================================
+// BANQUETTE ASSYNT NUIT
+// ==========================================
 
 loader.load(
     fichierGLB("Assynt_nuit.glb"),
 
-    function(gltf) {
-
+    gltf => {
         nightModel = gltf.scene;
 
         applyDrawingStyle(nightModel);
-
         scene.add(nightModel);
 
         boutonNuit.disabled = false;
@@ -550,36 +435,27 @@ loader.load(
 
     undefined,
 
-    function(error) {
-
-        console.error(
-            "Erreur banquette Vito XL nuit :",
-            error
-        );
-
+    error => {
+        console.error("Erreur banquette nuit :", error);
         status.textContent =
             "Impossible de charger le mode nuit.";
     }
 );
 
-
-// =====================================
+// ==========================================
 // CHARGEMENT DES CUISINES
-// =====================================
+// ==========================================
 
 function loadKitchen(key, file) {
-
     loader.load(
         fichierGLB(file),
 
-        function(gltf) {
-
+        gltf => {
             const model = gltf.scene;
 
             applyDrawingStyle(model);
 
             kitchens[key] = model;
-
             model.visible = false;
 
             scene.add(model);
@@ -589,151 +465,113 @@ function loadKitchen(key, file) {
 
         undefined,
 
-        function(error) {
-
+        error => {
             console.error(
                 "Erreur cuisine " + key,
                 error
             );
-
-            status.textContent =
-                "Impossible de charger la cuisine " + key;
         }
     );
 }
 
+// ==========================================
+// FICHIERS GLB
+// ==========================================
 
-// =====================================
-// FICHIERS GLB - MERCEDES VITO XL
-// =====================================
+loadKitchen("beagAdhair", "Beag_Adhair.glb");
+loadKitchen("beag", "Beag.glb");
+loadKitchen("corbett", "Corbett.glb");
+loadKitchen("biadh500", "Biadh.glb");
+loadKitchen("outdoor", "Outdoor.glb");
 
-loadKitchen(
-    "beagAdhair",
-    "Beag_Adhair.glb"
-);
+// NOUVEAU MODULE MEADHAN
+loadKitchen("meadhan", "Meadhan.glb");
 
-loadKitchen(
-    "beag",
-    "Beag.glb"
-);
-
-loadKitchen(
-    "corbett",
-    "Corbett.glb"
-);
-
-loadKitchen(
-    "outdoor",
-    "Outdoor.glb"
-);
-
-loadKitchen(
-    "biadh500",
-    "Biadh.glb"
-);
-
-
-// =====================================
-// AFFICHAGE DES CUISINES
-// =====================================
+// ==========================================
+// AFFICHAGE CUISINES
+// ==========================================
 
 function updateKitchens() {
-
-    Object.keys(kitchens).forEach(
-        function(key) {
-
-            if (kitchens[key]) {
-                kitchens[key].visible =
-                    key === selectedKitchen;
-            }
+    Object.keys(kitchens).forEach(key => {
+        if (kitchens[key]) {
+            kitchens[key].visible =
+                key === selectedKitchen;
         }
-    );
+    });
 }
 
-
-// =====================================
+// ==========================================
 // COMMUNICATION AVEC WIX
-// =====================================
+// ==========================================
 
-window.addEventListener(
-    "message",
-    function(event) {
+window.addEventListener("message", event => {
 
-        let cuisine = event.data?.cuisine;
+    let cuisine = event.data?.cuisine;
 
-        // Compatibilité des identifiants Biadh
-
-        if (cuisine === "biadh") {
-            cuisine = "biadh500";
-        }
-
-        if (
-            cuisine === "aucune" ||
-            Object.prototype.hasOwnProperty.call(
-                kitchens,
-                cuisine
-            )
-        ) {
-
-            selectedKitchen = cuisine;
-            updateKitchens();
-        }
-
-        const mode = event.data?.mode;
-
-        if (
-            mode === "jour" ||
-            (mode === "nuit" && nightModel)
-        ) {
-
-            selectedMode = mode;
-            updateBedMode();
-        }
+    if (cuisine === "biadh") {
+        cuisine = "biadh500";
     }
-);
 
+    if (
+        cuisine === "aucune" ||
+        Object.prototype.hasOwnProperty.call(
+            kitchens,
+            cuisine
+        )
+    ) {
+        selectedKitchen = cuisine;
+        updateKitchens();
+    }
 
-// =====================================
+    const mode = event.data?.mode;
+
+    if (
+        mode === "jour" ||
+        mode === "nuit"
+    ) {
+        selectedMode = mode;
+        updateBedMode();
+    }
+});
+
+// ==========================================
+// SIGNAL DE DISPONIBILITÉ POUR WIX
+// ==========================================
+
+window.parent.postMessage({
+    type: "assyntReady"
+}, "*");
+
+// ==========================================
 // ANIMATION
-// =====================================
+// ==========================================
 
 function animate() {
-
     requestAnimationFrame(animate);
 
     controls.update();
 
-    renderer.render(
-        scene,
-        camera
-    );
+    renderer.render(scene, camera);
 }
 
 animate();
 
-
-// =====================================
+// ==========================================
 // REDIMENSIONNEMENT
-// =====================================
+// ==========================================
 
-window.addEventListener(
-    "resize",
-    function() {
+window.addEventListener("resize", () => {
+    camera.aspect =
+        window.innerWidth / window.innerHeight;
 
-        camera.aspect =
-            window.innerWidth /
-            window.innerHeight;
+    camera.updateProjectionMatrix();
 
-        camera.updateProjectionMatrix();
-
-        renderer.setSize(
-            window.innerWidth,
-            window.innerHeight
-        );
-    }
-);
+    renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+    );
+});
 
 </script>
-
 </body>
 </html>
