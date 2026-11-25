@@ -1,1 +1,748 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<title>ASSYNT – Ford Transit Custom L2 – Banquette</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #ffffff;
+    font-family: Arial, sans-serif;
+}
+
+#viewer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#status {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    font-size: 12px;
+    color: #777;
+    text-align: center;
+    width: 90%;
+    pointer-events: none;
+}
+
+#indication3D {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 20;
+    background: rgba(255,255,255,0.92);
+    padding: 12px 16px;
+    border-radius: 10px;
+    color: #333333;
+    font-size: 13px;
+    line-height: 1.6;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+</style>
+</head>
+
+<body>
+
+<div id="indication3D">
+    <div style="font-weight:600;">
+        ↻ Vue 3D interactive
+    </div>
+    <div style="font-size:12px;color:#777777;">
+        Faites glisser pour faire pivoter
+    </div>
+</div>
+
+<div id="viewer"></div>
+
+<div id="status">
+    Chargement du modèle 3D...
+</div>
+
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+    }
+}
+</script>
+
+<script type="module">
+
+import * as THREE from "three";
+
+import { GLTFLoader } from
+    "three/addons/loaders/GLTFLoader.js";
+
+import { OrbitControls } from
+    "three/addons/controls/OrbitControls.js";
+
+
+// ==========================================
+// SCÈNE
+// ==========================================
+
+const scene = new THREE.Scene();
+
+scene.background = new THREE.Color(0xffffff);
+
+
+// ==========================================
+// CAMÉRA
+// ==========================================
+
+const camera = new THREE.PerspectiveCamera(
+    35,
+    window.innerWidth / window.innerHeight,
+    0.01,
+    10000
+);
+
+
+// ==========================================
+// RENDU
+// ==========================================
+
+const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: false
+});
+
+renderer.setPixelRatio(
+    Math.min(window.devicePixelRatio || 1, 2)
+);
+
+renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+);
+
+document.getElementById("viewer")
+    .appendChild(renderer.domElement);
+
+
+// ==========================================
+// ÉCLAIRAGE
+// ==========================================
+
+scene.add(
+    new THREE.HemisphereLight(
+        0xffffff,
+        0xffffff,
+        3
+    )
+);
+
+const light = new THREE.DirectionalLight(
+    0xffffff,
+    3
+);
+
+light.position.set(5, 10, 7);
+
+scene.add(light);
+
+
+// ==========================================
+// CONTRÔLES 3D
+// ==========================================
+
+const controls = new OrbitControls(
+    camera,
+    renderer.domElement
+);
+
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+
+controls.enableZoom = true;
+controls.enableRotate = true;
+controls.enablePan = true;
+
+
+// ==========================================
+// INDICATION 3D
+// ==========================================
+
+const indication3D =
+    document.getElementById("indication3D");
+
+let minuterieIndication;
+
+function masquerIndication3D() {
+
+    clearTimeout(minuterieIndication);
+
+    indication3D.style.opacity = "0";
+
+}
+
+function afficherIndication3D() {
+
+    clearTimeout(minuterieIndication);
+
+    minuterieIndication = setTimeout(() => {
+
+        indication3D.style.opacity = "1";
+
+    }, 3000);
+
+}
+
+controls.addEventListener(
+    "start",
+    masquerIndication3D
+);
+
+controls.addEventListener(
+    "end",
+    afficherIndication3D
+);
+
+
+// ==========================================
+// STYLE DESSIN
+// ==========================================
+
+const drawingMaterial =
+    new THREE.MeshStandardMaterial({
+
+        color: 0xf2f2f0,
+        roughness: 0.9,
+        metalness: 0,
+        side: THREE.DoubleSide
+
+    });
+
+const edgeMaterial =
+    new THREE.LineBasicMaterial({
+
+        color: 0x303030
+
+    });
+
+
+function applyDrawingStyle(model) {
+
+    model.traverse(child => {
+
+        if (!child.isMesh) return;
+
+        child.material = drawingMaterial;
+
+        const edges = new THREE.EdgesGeometry(
+            child.geometry,
+            25
+        );
+
+        const lines = new THREE.LineSegments(
+            edges,
+            edgeMaterial
+        );
+
+        child.add(lines);
+
+    });
+
+}
+
+
+// ==========================================
+// CHARGEMENT
+// ==========================================
+
+const loader = new GLTFLoader();
+
+const status =
+    document.getElementById("status");
+
+let baseModel = null;
+
+let nightModel = null;
+
+let selectedMode = "jour";
+
+let selectedKitchen = "beagAdhair";
+
+
+// ==========================================
+// CUISINES FORD TRANSIT CUSTOM L2
+// ==========================================
+
+const kitchens = {
+
+    beagAdhair: null,
+
+    beag: null,
+
+    corbett: null,
+
+    biadh500: null,
+
+    outdoor: null,
+
+    meadhan: null
+
+};
+
+
+// ==========================================
+// VERSION DES FICHIERS GLB
+// ==========================================
+
+const VERSION_MODELES = "20261125-ford-l2-1";
+
+
+function fichierGLB(nomFichier) {
+
+    const url = new URL(
+        nomFichier,
+        window.location.href
+    );
+
+    url.searchParams.set(
+        "v",
+        VERSION_MODELES
+    );
+
+    return url.href;
+
+}
+
+
+// ==========================================
+// CADRAGE CAMÉRA
+// MODÈLE PLUS PETIT À L'ÉCRAN
+// ==========================================
+
+function frameCamera(model) {
+
+    const box =
+        new THREE.Box3().setFromObject(model);
+
+    const size = box.getSize(
+        new THREE.Vector3()
+    );
+
+    const center = box.getCenter(
+        new THREE.Vector3()
+    );
+
+    const maxDim = Math.max(
+        size.x,
+        size.y,
+        size.z
+    );
+
+    if (maxDim <= 0) return;
+
+
+    // Caméra reculée de 50 %
+
+    camera.position.set(
+
+        center.x + maxDim * 1.35,
+
+        center.y + maxDim * 0.825,
+
+        center.z + maxDim * 1.35
+
+    );
+
+    controls.target.copy(center);
+
+    camera.near = Math.max(
+        maxDim / 100,
+        0.001
+    );
+
+    camera.far = maxDim * 100;
+
+    camera.updateProjectionMatrix();
+
+    controls.update();
+
+}
+
+
+// ==========================================
+// AFFICHAGE BANQUETTE JOUR / NUIT
+// COMMANDÉ UNIQUEMENT PAR WIX
+// ==========================================
+
+function updateBedMode() {
+
+    if (baseModel) {
+
+        baseModel.visible =
+            selectedMode === "jour";
+
+    }
+
+    if (nightModel) {
+
+        nightModel.visible =
+            selectedMode === "nuit";
+
+    }
+
+}
+
+
+// ==========================================
+// BANQUETTE ASSYNT JOUR
+// FORD TRANSIT CUSTOM L2
+// ==========================================
+
+loader.load(
+
+    fichierGLB("Assynt_jour.glb"),
+
+    gltf => {
+
+        baseModel = gltf.scene;
+
+        applyDrawingStyle(baseModel);
+
+        scene.add(baseModel);
+
+        updateBedMode();
+
+        frameCamera(baseModel);
+
+        status.textContent = "";
+
+    },
+
+    undefined,
+
+    error => {
+
+        console.error(
+
+            "Erreur banquette jour :",
+
+            error
+
+        );
+
+        status.textContent =
+            "Erreur de chargement de la banquette.";
+
+    }
+
+);
+
+
+// ==========================================
+// BANQUETTE ASSYNT NUIT
+// FORD TRANSIT CUSTOM L2
+// ==========================================
+
+loader.load(
+
+    fichierGLB("Assynt_nuit.glb"),
+
+    gltf => {
+
+        nightModel = gltf.scene;
+
+        applyDrawingStyle(nightModel);
+
+        scene.add(nightModel);
+
+        updateBedMode();
+
+    },
+
+    undefined,
+
+    error => {
+
+        console.error(
+
+            "Erreur banquette nuit :",
+
+            error
+
+        );
+
+    }
+
+);
+
+
+// ==========================================
+// CHARGEMENT DES CUISINES
+// ==========================================
+
+function loadKitchen(key, file) {
+
+    loader.load(
+
+        fichierGLB(file),
+
+        gltf => {
+
+            const model = gltf.scene;
+
+            applyDrawingStyle(model);
+
+            kitchens[key] = model;
+
+            model.visible = false;
+
+            scene.add(model);
+
+            updateKitchens();
+
+        },
+
+        undefined,
+
+        error => {
+
+            console.error(
+
+                "Erreur cuisine " + key,
+
+                error
+
+            );
+
+        }
+
+    );
+
+}
+
+
+// ==========================================
+// FICHIERS GLB DES CUISINES
+// FORD TRANSIT CUSTOM L2
+// ==========================================
+
+loadKitchen(
+
+    "beagAdhair",
+
+    "Beag_Adhair.glb"
+
+);
+
+loadKitchen(
+
+    "beag",
+
+    "Beag.glb"
+
+);
+
+loadKitchen(
+
+    "corbett",
+
+    "Corbett.glb"
+
+);
+
+loadKitchen(
+
+    "biadh500",
+
+    "Biadh.glb"
+
+);
+
+loadKitchen(
+
+    "outdoor",
+
+    "Outdoor.glb"
+
+);
+
+loadKitchen(
+
+    "meadhan",
+
+    "Meadhan.glb"
+
+);
+
+
+// ==========================================
+// AFFICHAGE DE LA CUISINE SÉLECTIONNÉE
+// ==========================================
+
+function updateKitchens() {
+
+    Object.keys(kitchens).forEach(key => {
+
+        if (kitchens[key]) {
+
+            kitchens[key].visible =
+                key === selectedKitchen;
+
+        }
+
+    });
+
+}
+
+
+// ==========================================
+// COMMUNICATION AVEC WIX
+// ==========================================
+
+window.addEventListener(
+
+    "message",
+
+    event => {
+
+        let cuisine = event.data?.cuisine;
+
+        if (cuisine === "biadh") {
+
+            cuisine = "biadh500";
+
+        }
+
+
+        // CHANGEMENT DE CUISINE
+
+        if (
+
+            cuisine === "aucune" ||
+
+            Object.prototype.hasOwnProperty.call(
+
+                kitchens,
+
+                cuisine
+
+            )
+
+        ) {
+
+            selectedKitchen = cuisine;
+
+            updateKitchens();
+
+        }
+
+
+        // CHANGEMENT DU MODE JOUR / NUIT
+
+        const mode = event.data?.mode;
+
+        if (
+
+            mode === "jour" ||
+
+            mode === "nuit"
+
+        ) {
+
+            selectedMode = mode;
+
+            updateBedMode();
+
+        }
+
+    }
+
+);
+
+
+// ==========================================
+// SIGNAL DE DISPONIBILITÉ POUR WIX
+// ==========================================
+
+window.parent.postMessage(
+
+    {
+
+        type: "assyntReady"
+
+    },
+
+    "*"
+
+);
+
+
+// ==========================================
+// ANIMATION
+// ==========================================
+
+function animate() {
+
+    requestAnimationFrame(animate);
+
+    controls.update();
+
+    renderer.render(
+
+        scene,
+
+        camera
+
+    );
+
+}
+
+animate();
+
+
+// ==========================================
+// REDIMENSIONNEMENT
+// ==========================================
+
+window.addEventListener(
+
+    "resize",
+
+    () => {
+
+        camera.aspect =
+
+            window.innerWidth /
+
+            window.innerHeight;
+
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(
+
+            window.innerWidth,
+
+            window.innerHeight
+
+        );
+
+    }
+
+);
+
+</script>
+
+</body>
+</html>
